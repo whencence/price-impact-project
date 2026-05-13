@@ -166,3 +166,102 @@ The demo writes:
 4. Keep using `src.alpha.build_synthetic_alpha` for the homework alpha.
 5. Use `src.strategy.generate_trades_for_alpha` for target/trade logic, or pass its output into the final backtest engine.
 6. Use `src.stress_tests` around the final simulator for delayed signal, wrong impact model, and forced liquidation tests.
+
+## Section 2.5 OW Optimal Trading Strategy
+
+The OW strategy uses:
+
+```text
+outputs/alphas/strategy_alpha_input_h5m_rho010_H5m.csv
+```
+
+with `alpha_t = alpha_for_strategy`. The alpha derivative is a backward
+difference in clock-time minutes within each stock/date group:
+
+```text
+alpha_dot_t = (alpha_t - alpha_{t-1}) / dt_minutes
+```
+
+The deterministic-alpha OW target is:
+
+```text
+I_target = 0.5 alpha - beta_I^{-1} alpha_dot
+beta_I = ln(2) / H_I
+```
+
+The discrete OW impact mechanics are:
+
+```text
+I_before = exp(-beta_I dt) I_prev
+required_qtilde = (I_target - I_before) / lambda
+```
+
+The course OW model drives impact with normalized signed volume:
+
+```text
+I_{t+dt} - I_t = -beta_I I_t dt + lambda sigma q_t / ADV
+qtilde = sigma q_t / ADV
+```
+
+Therefore the implementation distinguishes:
+
+- `signed_volume`: the real signed traded volume `q_t`
+- `normalized_trade`: `qtilde = sigma * signed_volume / ADV`
+- `trade`: a backward-compatible alias for `signed_volume`
+
+For the linear OW baseline:
+
+```text
+signed_volume = required_qtilde * ADV / sigma
+normalized_trade = sigma * signed_volume / ADV
+I_after = I_before + lambda normalized_trade
+Q_new = Q_old + signed_volume
+```
+
+For the optional square-root variant:
+
+```text
+qtilde = sigma sign(q_t) sqrt(abs(q_t) / ADV)
+```
+
+Baseline remains the linear OW model unless explicitly changed.
+
+`sigma` is the 20-day trailing average of daily intraday price volatility, and
+`ADV` is the 20-day trailing average of daily absolute traded volume. Both are
+computed stock-by-stock from `binSamples` using previous trading days only, so
+the current day is excluded.
+
+Wealth is computed as:
+
+```text
+gross_pnl = Q_prev DeltaS
+quadratic_impact_cost_normalized = 0.5 lambda normalized_trade^2
+signed_impact_cost_normalized = I_before normalized_trade + quadratic_impact_cost_normalized
+net_pnl = gross_pnl - signed_impact_cost_normalized
+```
+
+These cost columns are normalized diagnostics until the final calibrated cost
+scale is agreed with the fitted model/backtest module.
+
+Run the baseline OW mechanics with:
+
+```bash
+python -m src.run_ow_strategy
+```
+
+Outputs are saved under `outputs/strategy/ow/`, including:
+
+- `ow_strategy_trades.csv`
+- `ow_daily_metrics.csv`
+- `ow_summary_metrics.csv`
+- `ow_strategy_validation_report.txt`
+- figures under `outputs/strategy/ow/figures/`
+
+Important caveat: `impact_lambda = 1.0` is currently a placeholder. The code
+validates strategy mechanics, but the economic scale of trades, costs, and PnL
+is not final until calibrated OW parameters arrive from the fitted model module.
+Once available, replace the placeholder with stock-specific calibrated lambdas
+through the same interface.
+
+`H_I` remains a clock-time half-life in minutes. The sensitivity grid is
+`H_I in [1, 5, 30, 60]` minutes.
