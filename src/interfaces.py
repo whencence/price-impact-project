@@ -21,6 +21,8 @@ def validate_market_data(df: pd.DataFrame) -> None:
         raise ValueError(f"market_data is missing required columns: {sorted(missing)}")
     if df.empty:
         raise ValueError("market_data must not be empty")
+    if not pd.api.types.is_datetime64_any_dtype(df["timestamp"]):
+        raise ValueError("market_data column 'timestamp' must be pandas datetime dtype")
     if df["mid"].isna().any():
         raise ValueError("market_data column 'mid' contains missing values")
     if (df["mid"] <= 0).any():
@@ -30,11 +32,13 @@ def validate_market_data(df: pd.DataFrame) -> None:
 def validate_alpha_data(df: pd.DataFrame, alpha_col: str) -> None:
     """Validate data containing an alpha column usable by the strategy."""
 
-    missing = REQUIRED_ALPHA_BASE_COLUMNS.union({alpha_col}).difference(df.columns)
+    missing = REQUIRED_MARKET_COLUMNS.union({alpha_col}).difference(df.columns)
     if missing:
         raise ValueError(f"alpha data is missing required columns: {sorted(missing)}")
     if df.empty:
         raise ValueError("alpha data must not be empty")
+    if not pd.api.types.is_datetime64_any_dtype(df["timestamp"]):
+        raise ValueError("alpha data column 'timestamp' must be pandas datetime dtype")
 
 
 def validate_impact_params(impact_params: Mapping[str, Any]) -> None:
@@ -60,4 +64,3 @@ def validate_impact_params(impact_params: Mapping[str, Any]) -> None:
                 raise ValueError(f"params for {model_name!r}/{ticker!r} must be a mapping")
             if "lambda" in params and params["lambda"] < 0:
                 raise ValueError(f"lambda for {model_name!r}/{ticker!r} must be non-negative")
-

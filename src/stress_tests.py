@@ -2,7 +2,6 @@
 
 from typing import Any, Mapping
 
-import numpy as np
 import pandas as pd
 
 from src.config import StrategyConfig, StressTestConfig
@@ -69,8 +68,8 @@ def run_wrong_model_stress(
         true_costs.append(cost)
     out["true_impact_cost"] = true_costs
     out["impact_cost"] = out["true_impact_cost"]
-    out["assumed_model_name"] = assumed_model_name
-    out["true_model_name"] = true_model_name
+    out["model_name_assumed"] = assumed_model_name
+    out["model_name_true"] = true_model_name
     out["model_name"] = f"assumed={assumed_model_name},true={true_model_name}"
     return simulate_strategy_pnl(out)
 
@@ -171,4 +170,3 @@ def run_all_stress_tests(
             stress_config.forced_liquidation_time,
         )
     return results
-

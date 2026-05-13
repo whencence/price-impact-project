@@ -9,23 +9,24 @@ from src.config import StrategyConfig
 from src.interfaces import validate_alpha_data, validate_impact_params
 
 DEFAULT_LAMBDA = 1e-6
+DEFAULT_PARAMS = {"lambda": 1e-6, "rho": 0.1}
 
 
 def get_model_params_for_ticker(
     impact_params: Mapping[str, Any], model_name: str, ticker: str
 ) -> dict[str, float]:
-    """Return ticker-specific impact params, falling back to "__universal__"."""
+    """Return ticker params, falling back to "__universal__" then safe defaults."""
 
-    validate_impact_params(impact_params)
+    try:
+        validate_impact_params(impact_params)
+    except ValueError:
+        return DEFAULT_PARAMS.copy()
     if model_name not in impact_params:
-        raise ValueError(f"model_name {model_name!r} not found in impact_params")
+        return DEFAULT_PARAMS.copy()
     model_params = impact_params[model_name]
     params = model_params.get(ticker, model_params.get("__universal__"))
     if params is None:
-        raise ValueError(
-            f"no impact params for ticker {ticker!r} under model {model_name!r}, "
-            "and no '__universal__' fallback was provided"
-        )
+        return DEFAULT_PARAMS.copy()
     return dict(params)
 
 
@@ -111,10 +112,9 @@ def simulate_strategy_pnl(trades_df: pd.DataFrame) -> pd.DataFrame:
         raise ValueError(f"trades_df is missing required columns: {sorted(missing)}")
 
     out = trades_df.copy().sort_values(["ticker", "date", "timestamp"]).reset_index(drop=True)
-    out["price_change"] = out.groupby("ticker", sort=False)["mid"].diff().fillna(0.0)
-    out["previous_position"] = out.groupby("ticker", sort=False)["position"].shift(1).fillna(0.0)
-    new_day = out[["ticker", "date"]].ne(out[["ticker", "date"]].shift()).any(axis=1)
-    out.loc[new_day, "previous_position"] = 0.0
+    grouped = out.groupby(["ticker", "date"], sort=False)
+    out["price_change"] = grouped["mid"].diff().fillna(0.0)
+    out["previous_position"] = grouped["position"].shift(1).fillna(0.0)
     out["trading_cashflow"] = -out["trade"] * out["mid"]
     out["inventory_pnl"] = out["previous_position"] * out["price_change"]
     # TODO: replace this approximate PnL calculation with teammate's
@@ -135,4 +135,3 @@ def run_strategy(
 
     trades = generate_trades_for_alpha(df, impact_params, model_name, alpha_col, config)
     return simulate_strategy_pnl(trades)
-

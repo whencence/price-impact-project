@@ -1,0 +1,47 @@
+# Python caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments and local env files
+.venv/
+venv/
+env/
+ENV/
+.env
+.env.*
+
+# Jupyter/IPython
+.ipynb_checkpoints/
+profile_default/
+ipython_config.py
+
+# Raw/project data: large course datasets should stay out of git
+data/
+
+# Generated outputs, reports, figures, and demo artifacts
+outputs/
+notebooks/outputs/
+
+# Keep source notebooks/code tracked, but ignore temporary notebook autosaves
+*.nbconvert.ipynb
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs and local scratch files
+*.log
+tmp/
+temp/
+scratch/
+
