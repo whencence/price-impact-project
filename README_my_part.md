@@ -265,3 +265,150 @@ through the same interface.
 
 `H_I` remains a clock-time half-life in minutes. The sensitivity grid is
 `H_I in [1, 5, 30, 60]` minutes.
+
+## Section 2.5 Reduced-Form AFS Strategy
+
+My teammate described the enhanced fitted model as a reduced form of AFS. The
+exact fitted parameter output is not available yet, so the implementation is
+parameterized and uses placeholder defaults.
+
+The reduced-form liquidity signal is:
+
+```text
+v_t = rolling sum of observed absolute market volume
+lambda_t = lambda_base / sqrt(v_t)
+```
+
+The local volume state `v_t` is computed from `binSamples` market `trade` over a
+rolling clock-time window, using actual timestamps and resetting by stock/date.
+
+The baseline target impact uses the slow-moving liquidity heuristic:
+
+```text
+I*_t = 0.5 alpha_t - beta^{-1} mu_t
+```
+
+where `alpha_t = alpha_for_strategy`, and the default `mu_t` is a causal
+backward derivative of alpha in minutes. The full gamma formula is implemented
+as an option:
+
+```text
+I*_t = ((beta + gamma'_t) / (2 beta + gamma'_t)) alpha_t
+       - (1 / (2 beta + gamma'_t)) mu_t
+```
+
+The default trade translation uses the course position formula because it is
+more robust to small target-impact errors:
+
+```text
+Q_t = I_t / lambda_t + sum_{s <= t} beta I_s dt / lambda_s
+```
+
+An inverse-SDE translation method is also exposed for diagnostics:
+
+```text
+Delta Q_t = (beta I_t dt + Delta I_t) / lambda_t
+```
+
+Run the reduced-form strategy with:
+
+```bash
+python -m src.run_reduced_form_strategy
+```
+
+Outputs are saved under `outputs/strategy/reduced_form/`:
+
+- `reduced_form_strategy_trades.csv`
+- `reduced_form_daily_metrics.csv`
+- `reduced_form_summary_metrics.csv`
+- `reduced_form_validation_report.txt`
+- `reduced_form_sensitivity_summary.csv` from the notebook
+- figures under `outputs/strategy/reduced_form/figures/`
+
+Important caveats:
+
+- `lambda_base = 1.0` is a placeholder until fitted parameters arrive.
+- `beta` defaults to `ln(2) / impact_half_life_minutes`.
+- Stock-specific fitted parameters can be added later through the config/loaders.
+- This is a reduced-form AFS-style strategy, not the full nonlinear AFS model.
+- The baseline uses the slow-moving liquidity heuristic; full gamma is optional.
+- Outputs are mechanical until final calibrated parameters are plugged in.
+
+The module exposes `run_reduced_form_strategy(df, config)`, metrics, and
+validation functions so section 2.7 stress tests can wrap delayed signal,
+forced liquidation, and wrong-model scenarios around the same interface.
+
+## Section 2.7 Sensitivity Analysis and Stress Testing
+
+The stress framework evaluates the main degrees of freedom in the project:
+
+- alpha strength `rho`
+- alpha forecast horizon `h`
+- alpha decay half-life `H_alpha`
+- impact model choice
+- impact lambda
+- impact half-life `H_I`
+
+The OW implementation is fully supported. Reduced-form/fitted-model hooks are
+kept explicit, but final fitted-model stress results should wait until the
+calibrated parameters are available.
+
+Sensitivity grids:
+
+- `rho in [0.05, 0.10, 0.20, 0.30, 0.50]`
+- `h in [1, 5, 10]` minutes, when scenario alpha inputs exist
+- `H_alpha in [1, 5, 30, 60]` minutes, when alpha state columns exist
+- impact lambda multiplier in `[0.5, 1.0, 2.0]`
+- `H_I in [1, 5, 30, 60]` minutes
+
+Stress tests:
+
+1. Signal delayed by one minute:
+
+```text
+alpha_delayed(t) = last alpha at or before t - 1 minute
+```
+
+2. Forced liquidation at 12:00:
+
+```text
+block trade = -current position
+```
+
+The default convention stops trading after the forced liquidation for that
+stock/day.
+
+3. Wrong impact parameters:
+
+```text
+generate trades under assumed OW parameters
+recompute wealth with the same trades under true OW parameters
+```
+
+This keeps the trade path fixed and isolates the parameter misspecification
+effect.
+
+Run the full section 2.7 framework with:
+
+```bash
+python -m src.run_stress_tests
+```
+
+Outputs:
+
+- `outputs/stress/sensitivity_summary.csv`
+- `outputs/stress/stress_summary.csv`
+- `outputs/stress/all_scenarios_summary.csv`
+- `outputs/stress/stress_validation_report.txt`
+- scenario trades such as `signal_delay_trades.csv`, `forced_liquidation_trades.csv`, and `wrong_impact_trades.csv`
+- figures under `outputs/stress/figures/`
+
+Caveats:
+
+- Until fitted reduced-form parameters are finalized, wrong-impact-model stress
+  is represented by wrong OW parameter stress rather than fake fitted-model
+  results.
+- If `lambda` is still a placeholder, stress outputs validate framework
+  mechanics but are not final economic conclusions.
+- Final report results should be rerun on the selected out-of-sample period with
+  calibrated in-sample parameters and enough trailing data for sigma/ADV.
