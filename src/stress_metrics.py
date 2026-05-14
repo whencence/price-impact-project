@@ -125,7 +125,7 @@ def _plot_bar(df: pd.DataFrame, value_col: str, title: str, path: Path) -> None:
     ax.set_ylabel(value_col)
     ax.tick_params(axis="x", rotation=80)
     fig.tight_layout()
-    fig.savefig(path, dpi=150)
+    fig.savefig(path, dpi=150, bbox_inches="tight")
     plt.close(fig)
 
 
@@ -155,5 +155,5 @@ def save_cumulative_wealth_plot(
     ax.legend()
     fig.autofmt_xdate()
     fig.tight_layout()
-    fig.savefig(fig_path, dpi=150)
+    fig.savefig(fig_path, dpi=150, bbox_inches="tight")
     plt.close(fig)

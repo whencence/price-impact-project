@@ -64,7 +64,7 @@ def prepare_strategy_data(df: pd.DataFrame, config: OWStrategyConfig) -> pd.Data
     out.loc[out["dt_minutes"] <= 0, "dt_minutes"] = 0.0
     out["delta_mid"] = grouped[config.price_col].diff().fillna(0.0)
     alpha_prev = grouped[config.alpha_col].shift(1)
-    out["alpha"] = out[config.alpha_col]
+    out["alpha"] = out[config.alpha_col] * config.alpha_scale
     out["alpha_dot"] = 0.0
     positive_dt = out["dt_minutes"] > 0
     out.loc[positive_dt, "alpha_dot"] = (
@@ -189,19 +189,35 @@ def invert_normalized_trade(
     raise ValueError("model_type must be 'linear' or 'sqrt'")
 
 
-def compute_impact_beta(config: OWStrategyConfig) -> float:
+def _stock_param(config: OWStrategyConfig, stock: str, key: str, default: float) -> float:
+    if config.per_stock_impact_params and stock in config.per_stock_impact_params:
+        return float(config.per_stock_impact_params[stock].get(key, default))
+    return float(default)
+
+
+def get_effective_impact_lambda(config: OWStrategyConfig, stock: str | None = None) -> float:
+    """Return the impact lambda used for a stock, falling back to the global config."""
+
+    if stock is None:
+        return float(config.impact_lambda)
+    return _stock_param(config, stock, "impact_lambda", config.impact_lambda)
+
+
+def compute_impact_beta(config: OWStrategyConfig, stock: str | None = None) -> float:
     """Return beta_I = ln(2) / impact_half_life_minutes."""
 
-    return float(np.log(2.0) / config.impact_half_life_minutes)
+    half_life = config.impact_half_life_minutes
+    if stock is not None:
+        half_life = _stock_param(config, stock, "impact_half_life_minutes", half_life)
+    return float(np.log(2.0) / half_life)
 
 
 def compute_target_impact(df: pd.DataFrame, config: OWStrategyConfig) -> pd.DataFrame:
     """Add OW target impact I_target = 0.5 alpha - alpha_dot / beta."""
 
     out = df.copy()
-    beta = compute_impact_beta(config)
-    out["impact_beta"] = beta
-    out["target_impact"] = 0.5 * out["alpha"] - out["alpha_dot"] / beta
+    out["impact_beta"] = out[config.stock_col].astype(str).map(lambda s: compute_impact_beta(config, s))
+    out["target_impact"] = (0.5 * out["alpha"] - out["alpha_dot"] / out["impact_beta"]) * config.target_impact_scale
     if config.max_abs_target_impact is not None:
         out["target_impact"] = out["target_impact"].clip(
             -config.max_abs_target_impact, config.max_abs_target_impact
@@ -210,7 +226,9 @@ def compute_target_impact(df: pd.DataFrame, config: OWStrategyConfig) -> pd.Data
 
 
 def _row_records_for_group(group: pd.DataFrame, config: OWStrategyConfig) -> list[dict]:
-    beta = compute_impact_beta(config)
+    stock = str(group[config.stock_col].iloc[0])
+    beta = compute_impact_beta(config, stock)
+    impact_lambda = get_effective_impact_lambda(config, stock)
     position_prev = float(config.initial_position)
     impact_after_prev = float(config.initial_impact)
     records: list[dict] = []
@@ -225,39 +243,74 @@ def _row_records_for_group(group: pd.DataFrame, config: OWStrategyConfig) -> lis
         adv = float(row["ADV"]) if "ADV" in row and pd.notna(row["ADV"]) else np.nan
         has_scaling = bool(row.get("has_scaling", False))
 
-        required_qtilde = (target - impact_before) / config.impact_lambda
+        required_qtilde = (target - impact_before) / impact_lambda
         skipped = False
+        raw_signed_volume = 0.0
+        signed_volume_before_clipping = 0.0
         signed_volume = 0.0
         normalized_trade = 0.0
 
         if has_scaling:
-            signed_volume = invert_normalized_trade(
+            raw_signed_volume = invert_normalized_trade(
                 required_qtilde, sigma, adv, config.impact_model_type
             )
-            if not np.isfinite(signed_volume):
-                signed_volume = 0.0
+            if not np.isfinite(raw_signed_volume):
+                raw_signed_volume = 0.0
                 skipped = True
         else:
             skipped = True
 
+        signed_volume = raw_signed_volume
         if config.max_abs_trade is not None:
             signed_volume = float(np.clip(signed_volume, -config.max_abs_trade, config.max_abs_trade))
+        max_trade_allowed = np.inf
+        if np.isfinite(adv) and adv > 0:
+            trade_caps = []
+            if config.max_abs_trade_adv_fraction is not None:
+                trade_caps.append(config.max_abs_trade_adv_fraction * adv)
+            if config.max_participation_rate_per_trade is not None:
+                trade_caps.append(config.max_participation_rate_per_trade * adv)
+            if trade_caps:
+                max_trade_allowed = float(min(trade_caps))
+                signed_volume = float(np.clip(signed_volume, -max_trade_allowed, max_trade_allowed))
+        signed_volume_before_clipping = raw_signed_volume
 
         position_before = position_prev
         position_after = position_before + signed_volume
+        max_position_allowed = np.inf
         if config.max_abs_position is not None:
             clipped_position = float(
                 np.clip(position_after, -config.max_abs_position, config.max_abs_position)
             )
             signed_volume = clipped_position - position_before
             position_after = clipped_position
+        if np.isfinite(adv) and adv > 0 and config.max_abs_position_adv_fraction is not None:
+            max_position_allowed = float(config.max_abs_position_adv_fraction * adv)
+            clipped_position = float(np.clip(position_after, -max_position_allowed, max_position_allowed))
+            signed_volume = clipped_position - position_before
+            position_after = clipped_position
+        if np.isfinite(max_trade_allowed):
+            signed_volume = float(np.clip(signed_volume, -max_trade_allowed, max_trade_allowed))
+            position_after = position_before + signed_volume
 
         liquidation_trade = 0.0
         is_liquidation = False
         if config.liquidate_at_close and idx == last_idx:
-            liquidation_trade = -position_after
+            signed_volume_before_liquidation = signed_volume
+            liquidation_trade_raw = -position_after
+            liquidation_trade = liquidation_trade_raw
+            if np.isfinite(max_trade_allowed):
+                liquidation_trade = float(np.clip(liquidation_trade, -max_trade_allowed, max_trade_allowed))
             signed_volume += liquidation_trade
-            position_after = 0.0
+            position_after = position_before + signed_volume
+            if np.isfinite(max_position_allowed):
+                clipped_position = float(np.clip(position_after, -max_position_allowed, max_position_allowed))
+                signed_volume = clipped_position - position_before
+                position_after = clipped_position
+            if np.isfinite(max_trade_allowed):
+                signed_volume = float(np.clip(signed_volume, -max_trade_allowed, max_trade_allowed))
+                position_after = position_before + signed_volume
+            liquidation_trade = signed_volume - signed_volume_before_liquidation
             is_liquidation = True
 
         if has_scaling:
@@ -270,9 +323,9 @@ def _row_records_for_group(group: pd.DataFrame, config: OWStrategyConfig) -> lis
         else:
             normalized_trade = 0.0
 
-        impact_after = impact_before + config.impact_lambda * normalized_trade
+        impact_after = impact_before + impact_lambda * normalized_trade
         gross_pnl = position_before * float(row["delta_mid"])
-        quadratic_cost = 0.5 * config.impact_lambda * normalized_trade**2
+        quadratic_cost = 0.5 * impact_lambda * normalized_trade**2
         signed_cost = (
             impact_before * normalized_trade
             + quadratic_cost
@@ -280,15 +333,25 @@ def _row_records_for_group(group: pd.DataFrame, config: OWStrategyConfig) -> lis
         )
         net_pnl = gross_pnl - signed_cost
         participation = abs(signed_volume) / adv if np.isfinite(adv) and adv > 0 else np.nan
+        trade_clipped = bool(abs(raw_signed_volume - signed_volume) > 1e-9)
+        position_clipped = bool(np.isfinite(max_position_allowed) and abs(position_after) >= max_position_allowed - 1e-9)
 
         rec = row.to_dict()
         rec.update(
             {
                 "impact_model_type": config.impact_model_type,
+                "impact_lambda": impact_lambda,
                 "decay_factor": decay,
                 "impact_before_trade": impact_before,
                 "required_normalized_trade": required_qtilde,
                 "normalized_trade": normalized_trade,
+                "raw_signed_volume": raw_signed_volume,
+                "signed_volume_before_clipping": signed_volume_before_clipping,
+                "signed_volume_after_clipping": signed_volume,
+                "trade_clipped": trade_clipped,
+                "position_clipped": position_clipped,
+                "max_trade_allowed": max_trade_allowed,
+                "max_position_allowed": max_position_allowed,
                 "signed_volume": signed_volume,
                 "trade": signed_volume,
                 "position_before": position_before,
@@ -347,6 +410,7 @@ def run_ow_strategy(df: pd.DataFrame, config: OWStrategyConfig) -> pd.DataFrame:
         "impact_before_trade",
         "impact_after_trade",
         "impact_beta",
+        "impact_lambda",
         "dt_minutes",
         "decay_factor",
         "sigma",
@@ -355,6 +419,13 @@ def run_ow_strategy(df: pd.DataFrame, config: OWStrategyConfig) -> pd.DataFrame:
         "impact_model_type",
         "required_normalized_trade",
         "normalized_trade",
+        "raw_signed_volume",
+        "signed_volume_before_clipping",
+        "signed_volume_after_clipping",
+        "trade_clipped",
+        "position_clipped",
+        "max_trade_allowed",
+        "max_position_allowed",
         "signed_volume",
         "trade",
         "position_before",

@@ -11,6 +11,7 @@ from matplotlib import pyplot as plt
 from src.ow_strategy import (
     compute_impact_beta,
     compute_target_impact,
+    get_effective_impact_lambda,
     normalize_signed_volume,
     prepare_strategy_data,
     run_ow_strategy,
@@ -300,10 +301,12 @@ def run_ow_strategy_with_forced_liquidation(
     """Run OW with a block liquidation at the first timestamp >= liquidation_time."""
 
     prepared = compute_target_impact(prepare_strategy_data(alpha_df, base_ow_config), base_ow_config)
-    beta = compute_impact_beta(base_ow_config)
     threshold = pd.to_datetime(liquidation_time).time()
     rows = []
     for _, group in prepared.groupby([base_ow_config.stock_col, base_ow_config.date_col], sort=False):
+        stock = str(group[base_ow_config.stock_col].iloc[0])
+        beta = compute_impact_beta(base_ow_config, stock)
+        impact_lambda = get_effective_impact_lambda(base_ow_config, stock)
         position_prev = float(base_ow_config.initial_position)
         impact_after_prev = float(base_ow_config.initial_impact)
         liquidated = False
@@ -327,7 +330,7 @@ def run_ow_strategy_with_forced_liquidation(
                 trigger_done = True
                 liquidated = True
             elif has_scaling:
-                required = (float(row["target_impact"]) - impact_before) / base_ow_config.impact_lambda
+                required = (float(row["target_impact"]) - impact_before) / impact_lambda
                 signed_volume = required * adv / sigma if sigma > 0 and adv > 0 else 0.0
                 position_after = position_prev + signed_volume
                 is_forced = False
@@ -335,25 +338,63 @@ def run_ow_strategy_with_forced_liquidation(
                 signed_volume = 0.0
                 position_after = position_prev
                 is_forced = False
+            raw_signed_volume = signed_volume
+            max_trade_allowed = np.inf
+            max_position_allowed = np.inf
+            if np.isfinite(adv) and adv > 0:
+                trade_caps = []
+                if base_ow_config.max_abs_trade_adv_fraction is not None:
+                    trade_caps.append(base_ow_config.max_abs_trade_adv_fraction * adv)
+                if base_ow_config.max_participation_rate_per_trade is not None:
+                    trade_caps.append(base_ow_config.max_participation_rate_per_trade * adv)
+                if trade_caps:
+                    max_trade_allowed = float(min(trade_caps))
+                    signed_volume = float(np.clip(signed_volume, -max_trade_allowed, max_trade_allowed))
+                    position_after = position_prev + signed_volume
+                if base_ow_config.max_abs_position_adv_fraction is not None:
+                    max_position_allowed = float(base_ow_config.max_abs_position_adv_fraction * adv)
+                    clipped_position = float(np.clip(position_after, -max_position_allowed, max_position_allowed))
+                    signed_volume = clipped_position - position_prev
+                    if np.isfinite(max_trade_allowed):
+                        signed_volume = float(np.clip(signed_volume, -max_trade_allowed, max_trade_allowed))
+                    position_after = position_prev + signed_volume
             normalized = float(normalize_signed_volume(signed_volume, sigma, adv, base_ow_config.impact_model_type)) if has_scaling else 0.0
             if not np.isfinite(normalized):
                 normalized = 0.0
-            impact_after = impact_before + base_ow_config.impact_lambda * normalized
+            impact_after = impact_before + impact_lambda * normalized
             gross_pnl = position_prev * float(row["delta_mid"])
-            quad = 0.5 * base_ow_config.impact_lambda * normalized**2
+            quad = 0.5 * impact_lambda * normalized**2
             signed_cost = impact_before * normalized + quad
             rec = row.to_dict()
             rec.update(
                 {
+                    "impact_lambda": impact_lambda,
+                    "impact_model_type": base_ow_config.impact_model_type,
                     "decay_factor": decay,
                     "impact_before_trade": impact_before,
+                    "required_normalized_trade": (
+                        (float(row["target_impact"]) - impact_before) / impact_lambda
+                        if impact_lambda > 0
+                        else np.nan
+                    ),
                     "normalized_trade": normalized,
+                    "raw_signed_volume": raw_signed_volume,
+                    "signed_volume_before_clipping": raw_signed_volume,
+                    "signed_volume_after_clipping": signed_volume,
+                    "trade_clipped": bool(abs(raw_signed_volume - signed_volume) > 1e-9),
+                    "position_clipped": bool(np.isfinite(max_position_allowed) and abs(position_after) >= max_position_allowed - 1e-9),
+                    "max_trade_allowed": max_trade_allowed,
+                    "max_position_allowed": max_position_allowed,
                     "signed_volume": signed_volume,
                     "trade": signed_volume,
                     "position_before": position_prev,
                     "position_after": position_after,
                     "impact_after_trade": impact_after,
                     "participation_rate": abs(signed_volume) / adv if np.isfinite(adv) and adv > 0 else np.nan,
+                    "abs_signed_volume": abs(signed_volume),
+                    "abs_normalized_trade": abs(normalized),
+                    "signed_volume_notional": signed_volume * float(row[base_ow_config.price_col]),
+                    "skipped_due_to_missing_scaling": (not has_scaling) and (not is_forced),
                     "gross_pnl": gross_pnl,
                     "quadratic_impact_cost_normalized": quad,
                     "signed_impact_cost_normalized": signed_cost,
@@ -591,7 +632,7 @@ def _save_sensitivity_plots(summary: pd.DataFrame, fig_dir: Path) -> None:
             ax.set_xlabel("lambda multiplier")
             ax.legend()
             fig.tight_layout()
-            fig.savefig(fig_dir / "impact_lambda_sensitivity.png", dpi=150)
+            fig.savefig(fig_dir / "impact_lambda_sensitivity.png", dpi=150, bbox_inches="tight")
             plt.close(fig)
     if not impact.empty and "impact_half_life_minutes" in impact.columns:
         by_h = impact.dropna(subset=["impact_half_life_minutes"])
@@ -601,7 +642,7 @@ def _save_sensitivity_plots(summary: pd.DataFrame, fig_dir: Path) -> None:
             ax.set_title("Impact half-life sensitivity")
             ax.set_xlabel("H_I minutes")
             fig.tight_layout()
-            fig.savefig(fig_dir / "impact_half_life_sensitivity.png", dpi=150)
+            fig.savefig(fig_dir / "impact_half_life_sensitivity.png", dpi=150, bbox_inches="tight")
             plt.close(fig)
     decay = summary[summary["scenario_type"].eq("alpha_decay_sensitivity")]
     if not decay.empty and "alpha_decay_half_life_minutes" in decay.columns:
@@ -612,5 +653,5 @@ def _save_sensitivity_plots(summary: pd.DataFrame, fig_dir: Path) -> None:
         ax.set_xlabel("H_alpha minutes")
         ax.legend()
         fig.tight_layout()
-        fig.savefig(fig_dir / "alpha_decay_sensitivity.png", dpi=150)
+        fig.savefig(fig_dir / "alpha_decay_sensitivity.png", dpi=150, bbox_inches="tight")
         plt.close(fig)

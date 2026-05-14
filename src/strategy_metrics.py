@@ -106,7 +106,7 @@ def _hist_plot(series: pd.Series, title: str, xlabel: str, fig_path: Path) -> No
     ax.set_title(title)
     ax.set_xlabel(xlabel)
     fig.tight_layout()
-    fig.savefig(fig_path, dpi=150)
+    fig.savefig(fig_path, dpi=150, bbox_inches="tight")
     plt.close(fig)
 
 
@@ -124,7 +124,7 @@ def save_strategy_plots(trades_df: pd.DataFrame, daily_metrics: pd.DataFrame, ou
     ax.set_ylabel("wealth")
     fig.autofmt_xdate()
     fig.tight_layout()
-    fig.savefig(fig_dir / "ow_cumulative_wealth.png", dpi=150)
+    fig.savefig(fig_dir / "ow_cumulative_wealth.png", dpi=150, bbox_inches="tight")
     plt.close(fig)
 
     fig, ax = plt.subplots(figsize=(10, 5))
@@ -134,7 +134,7 @@ def save_strategy_plots(trades_df: pd.DataFrame, daily_metrics: pd.DataFrame, ou
     ax.set_ylabel("net PnL")
     fig.autofmt_xdate()
     fig.tight_layout()
-    fig.savefig(fig_dir / "ow_daily_net_pnl.png", dpi=150)
+    fig.savefig(fig_dir / "ow_daily_net_pnl.png", dpi=150, bbox_inches="tight")
     plt.close(fig)
 
     fig, ax = plt.subplots(figsize=(10, 5))
@@ -144,7 +144,7 @@ def save_strategy_plots(trades_df: pd.DataFrame, daily_metrics: pd.DataFrame, ou
     ax.legend()
     fig.autofmt_xdate()
     fig.tight_layout()
-    fig.savefig(fig_dir / "ow_gross_vs_net_pnl.png", dpi=150)
+    fig.savefig(fig_dir / "ow_gross_vs_net_pnl.png", dpi=150, bbox_inches="tight")
     plt.close(fig)
 
     if len(trades_df):
@@ -162,7 +162,7 @@ def save_strategy_plots(trades_df: pd.DataFrame, daily_metrics: pd.DataFrame, ou
         axes[0].set_title("OW sample strategy path")
         fig.autofmt_xdate()
         fig.tight_layout()
-        fig.savefig(fig_dir / "ow_sample_strategy_path.png", dpi=150)
+        fig.savefig(fig_dir / "ow_sample_strategy_path.png", dpi=150, bbox_inches="tight")
         plt.close(fig)
 
     _hist_plot(trades_df["signed_volume"], "OW signed volume histogram", "signed_volume", fig_dir / "ow_signed_volume_histogram.png")
@@ -177,7 +177,7 @@ def save_strategy_plots(trades_df: pd.DataFrame, daily_metrics: pd.DataFrame, ou
     ax.set_ylabel("shares")
     fig.autofmt_xdate()
     fig.tight_layout()
-    fig.savefig(fig_dir / "ow_daily_turnover.png", dpi=150)
+    fig.savefig(fig_dir / "ow_daily_turnover.png", dpi=150, bbox_inches="tight")
     plt.close(fig)
 
     fig, ax = plt.subplots(figsize=(10, 5))
@@ -186,5 +186,5 @@ def save_strategy_plots(trades_df: pd.DataFrame, daily_metrics: pd.DataFrame, ou
     ax.set_ylabel("drawdown")
     fig.autofmt_xdate()
     fig.tight_layout()
-    fig.savefig(fig_dir / "ow_drawdown.png", dpi=150)
+    fig.savefig(fig_dir / "ow_drawdown.png", dpi=150, bbox_inches="tight")
     plt.close(fig)

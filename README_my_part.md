@@ -375,8 +375,30 @@ alpha_delayed(t) = last alpha at or before t - 1 minute
 block trade = -current position
 ```
 
-The default convention stops trading after the forced liquidation for that
-stock/day.
+In the integrated rolling framework this is implemented in two versions:
+
+- **Hard block liquidation**: immediately forces `Q -> 0` in one block trade at
+  the liquidation timestamp. This answers the project stress question directly
+  and may violate normal participation caps by design.
+- **Capped residual liquidation**: respects the configured liquidation
+  participation cap. If the position cannot be fully liquidated at the first
+  timestamp, residual inventory remains active; liquidation trades have priority
+  over new alpha trades until the residual is cleared. Residual inventory can be
+  carried and is marked to market.
+
+Run both integrated variants with:
+
+```bash
+python -m src.run_integrated_rolling_simulations --mode single_pair --pair-id 1 --liquidation-mode both
+```
+
+Integrated outputs include:
+
+- `outputs/rolling_runs/pair_{pair_id}/stress/forced_liq_hard_block_trades.csv`
+- `outputs/rolling_runs/pair_{pair_id}/stress/forced_liq_capped_residual_trades.csv`
+- `outputs/rolling_runs/pair_{pair_id}/stress/forced_liq_hard_block_events.csv`
+- `outputs/rolling_runs/pair_{pair_id}/stress/forced_liq_capped_residual_events.csv`
+- fitted evaluator files for both liquidation paths.
 
 3. Wrong impact parameters:
 
@@ -412,3 +434,340 @@ Caveats:
   mechanics but are not final economic conclusions.
 - Final report results should be rerun on the selected out-of-sample period with
   calibrated in-sample parameters and enough trailing data for sigma/ADV.
+
+## Integrated Use Of Teammate 2.1/2.2/2.3 Outputs
+
+The integration layer reads teammate rolling pairs from:
+
+```text
+data/processed_2_1/rolling_full_universe/rolling_pair_summary.csv
+```
+
+For each selected pair, it loads the train/test processed bin parquet files,
+generates my synthetic alpha on the test month, runs my OW strategy, then
+evaluates the resulting trades under teammate fitted regressions.
+
+Teammate fitted models are handled as regressions for within-bin price movement:
+
+```text
+ret_bps = 10000 * (midEnd - mid) / mid
+```
+
+`OW_transient` is interpreted as:
+
+```text
+ret_bps = intercept + b_flow x_flow + b_state ow_state_pre
+```
+
+where `ow_state_pre` is reproduced with teammate convention:
+
+```text
+state_pre_t = exp(-dt / half_life_sec) * state_post_{t-1}
+state_post_t = state_pre_t + x_flow_t
+```
+
+`half_life_sec` is therefore a teammate regression time constant for feature
+reproduction. It is not treated as strict half-life there. When using it inside
+my OW strategy, it is converted to strict half-life as:
+
+```text
+H_minutes = half_life_sec * ln(2) / 60
+```
+
+`reduced_form` is interpreted as a fitted regression:
+
+```text
+ret_bps = intercept
+        + b1 x_flow
+        + b2 x_trade
+        + b3 x_hidden
+        + b4 x_flow_depth
+        + b5 lobImb
+        + b6 effLobImb
+        + b7 spread_bps
+```
+
+It is not the course dynamic AFS simulator unless a separate structural model is
+provided later.
+
+Feature scaling reproduces teammate logic:
+
+- `x_flow`, `x_trade`, and `x_hidden` are normalized by the train-month median
+  daily absolute `orderFlow` scale.
+- scales are computed from train month only and then applied to test month.
+- no current test information is used to compute train scales.
+
+Wrong-model stress uses the required convention:
+
+```text
+orderFlow_scenario = orderFlow_market + q_strategy
+marginal_impact_bps = predicted_with_trade - predicted_market
+```
+
+Run a debug pair with:
+
+```bash
+python -m src.run_integrated_rolling_simulations --mode single_pair --pair-id 1 --save-trades
+```
+
+Run all selected pairs with:
+
+```bash
+python -m src.run_integrated_rolling_simulations --mode all_pairs --max-pairs 3 --save-trades
+```
+
+Outputs:
+
+- `outputs/rolling_runs/pair_{pair_id}/alpha/`
+- `outputs/rolling_runs/pair_{pair_id}/my_ow_trades.csv`
+- `outputs/rolling_runs/pair_{pair_id}/fitted_proxy_strategy_trades.csv`
+- `outputs/rolling_runs/pair_{pair_id}/ow_transient_regression_evaluator.csv`
+- `outputs/rolling_runs/pair_{pair_id}/reduced_form_regression_evaluator.csv`
+- `outputs/rolling_runs/pair_{pair_id}/stress/wrong_model_regression_evaluator.csv`
+- `outputs/rolling_runs/all_pairs_strategy_summary.csv`
+- `outputs/rolling_runs/all_pairs_fitted_proxy_summary.csv`
+- `outputs/rolling_runs/all_pairs_wrong_model_summary.csv`
+- `outputs/rolling_runs/integrated_rolling_report.md`
+
+Important environment note: teammate processed market data are parquet files.
+The Python environment must have `pyarrow` or `fastparquet` installed, or the
+processed data must be exported to CSV before running the integration.
+
+Important caveats:
+
+- Do not call teammate `reduced_form` dynamic AFS.
+- Do not silently map `x_flow` to structural lambda.
+- `x_flow` can be used as a lambda proxy only with the explicit CLI flag
+  `--use-x-flow-lambda-proxy`, and the outputs are labelled accordingly.
+- Regression evaluator costs are model-implied diagnostics, not a full
+  structural simulator.
+
+### Fitted-Regression Proxy Strategy
+
+The project asks for an optimal strategy under OW and the fitted model. The OW
+case has a course-style closed form in target-impact space. Teammate's fitted
+`reduced_form` model, however, is a linear regression for within-bin `ret_bps`,
+not a structural impact dynamics. I therefore implement a fitted-model-aware
+**local myopic quadratic-cost proxy** rather than claiming a dynamic closed-form
+optimum.
+
+The proxy uses the same scenario convention as the wrong-model stress:
+
+```text
+orderFlow_scenario = orderFlow_market + q_strategy
+```
+
+Because the regression is linear, the local marginal predicted return impact of
+an additional strategy trade is:
+
+```text
+d ret_bps / dq =
+    b_x_flow / flowScale
+  + b_x_flow_depth / depth
+  + b_x_trade / flowScale   # only if explicitly enabled
+```
+
+This is converted into a price impact slope:
+
+```text
+impact_slope_price_per_share = mid * (d ret_bps / dq) / 10000
+```
+
+The one-step proxy objective is:
+
+```text
+max_q q * alpha_price
+      - impact_slope_price_per_share * q^2
+      - inventory_penalty * (Q_prev + q)^2
+```
+
+with:
+
+```text
+alpha_price = mid * alpha_for_strategy
+q_raw = (alpha_price - 2 * inventory_penalty * Q_prev)
+        / (2 * impact_slope_price_per_share + 2 * inventory_penalty)
+```
+
+The proxy uses the same participation, trade, and inventory caps as the
+integrated OW runner. Its output is saved to
+`outputs/rolling_runs/pair_{pair_id}/fitted_proxy_strategy_trades.csv`, with
+aggregate metrics in `outputs/rolling_runs/all_pairs_fitted_proxy_summary.csv`.
+
+This is the honest fitted-regression strategy benchmark available from the
+teammate model outputs. It should be labelled in the report as a local myopic
+proxy induced by the fitted regression's marginal impact slope, not as the
+course structural AFS optimum.
+
+### Integrated PnL and Fitted-Cost Validation
+
+The integrated rolling report now separates three concepts that should not be
+confused:
+
+1. **Gross alpha capture**: positive `gross_pnl` means the OW strategy captures
+   the synthetic alpha before fitted impact costs.
+2. **Internal OW normalized cost**: `signed_impact_cost_normalized` is useful for
+   checking OW mechanics, but it is not on the same economic scale as price-unit
+   fitted-regression costs.
+3. **Fitted regression impact cost**: teammate regressions imply a marginal
+   price move from our additional order flow.
+
+For fitted regression costs, the convention is:
+
+```text
+orderFlow_scenario = orderFlow_market + q_strategy
+marginal_impact_bps = pred_ret_bps_with_strategy - pred_ret_bps_market
+marginal_impact_price = mid * marginal_impact_bps / 10000
+fitted_cost = signed_volume * marginal_impact_price
+net_pnl_fitted_model = gross_pnl - fitted_cost
+```
+
+A positive `fitted_cost` is adverse and is subtracted from gross PnL. Therefore,
+negative fitted net PnL is not automatically a bug: it can occur when the
+model-implied impact cost is larger than the alpha capture.
+
+The validation report checks:
+
+- `gross_pnl = position_before * delta_mid`
+- `position_after = position_before + signed_volume`
+- `orderFlow_scenario = orderFlow_market + signed_volume`
+- `marginal_impact_bps = pred_with_trade - pred_market`
+- fitted cost sign and bps-to-price conversion
+- participation and position caps
+
+Current report paths:
+
+- `outputs/rolling_runs/integrated_rolling_report.md`
+- `outputs/rolling_runs/integrated_validation_report.txt`
+- `outputs/rolling_runs/integrated_validation_checks.csv`
+- `outputs/rolling_runs/pair_{pair_id}/debug/debug_strategy_path_sample.csv`
+
+### Figure Reproducibility
+
+Integrated rolling figures are regenerated statelessly on each run. The runner:
+
+- creates fresh matplotlib figures and closes them after saving;
+- overwrites the latest convenience figures under `outputs/rolling_runs/figures/`
+  and `outputs/rolling_runs/pair_{pair_id}/figures/`;
+- cleans old latest PNG/PDF figures by default before plotting;
+- records run metadata in `outputs/rolling_runs/latest_run_metadata.json`;
+- archives each run's figures under `outputs/rolling_runs/runs/{run_id}/`.
+
+The default CLI behavior is equivalent to:
+
+```bash
+python -m src.run_integrated_rolling_simulations --clean-output-figures
+```
+
+Use `--no-clean-output-figures` only when explicitly comparing existing latest
+figures manually. Validation checks confirm required figures exist, are non-empty,
+and were modified after the current run started.
+
+### Experiment Management For Full OOS Runs
+
+Integrated runs are now isolated under:
+
+```text
+outputs/full_runs/{experiment_name}/
+```
+
+Each experiment contains `metadata/`, `reports/`, `tables/`, and pair-level
+folders with `reports/`, `figures/`, `tables/`, `trades/`, `stress/`, and
+`debug/`. The pointer `outputs/rolling_runs/latest_experiment_path.txt` records
+the latest experiment folder.
+
+Recommended workflow:
+
+```bash
+python -m src.run_integrated_rolling_simulations \
+  --mode single_pair \
+  --pair-id 1 \
+  --scenario baseline \
+  --max-rows-per-pair 20000 \
+  --save-trades \
+  --experiment-name debug_pair1_baseline
+
+python -m src.run_integrated_rolling_simulations \
+  --mode single_pair \
+  --pair-id 1 \
+  --scenario baseline \
+  --save-trades \
+  --experiment-name full_pair1_baseline
+
+python -m src.run_integrated_rolling_simulations \
+  --mode single_pair \
+  --pair-id 1 \
+  --scenario signal_delay \
+  --save-trades \
+  --experiment-name full_pair1_signal_delay
+
+python -m src.run_integrated_rolling_simulations \
+  --mode single_pair \
+  --pair-id 1 \
+  --scenario wrong_model \
+  --save-trades \
+  --experiment-name full_pair1_wrong_model
+
+python -m src.run_integrated_rolling_simulations \
+  --mode single_pair \
+  --pair-id 1 \
+  --scenario forced_liquidation \
+  --liquidation-mode both \
+  --save-trades \
+  --experiment-name full_pair1_forced_liq
+
+python -m src.run_integrated_rolling_simulations \
+  --mode single_pair \
+  --pair-id 1 \
+  --scenario sizing_sensitivity \
+  --experiment-name full_pair1_sizing_sensitivity
+
+python -m src.run_integrated_rolling_simulations \
+  --mode single_pair \
+  --pair-id 1 \
+  --scenario all \
+  --save-trades \
+  --experiment-name full_pair1_all_scenarios
+
+python -m src.run_integrated_rolling_simulations \
+  --mode all_pairs \
+  --scenario baseline \
+  --experiment-name full_allpairs_baseline
+```
+
+When `--max-rows-per-pair` is omitted, the selected full out-of-sample test
+month is processed. The report records `full_out_of_sample_run=True` and daily
+Sharpe is treated as meaningful only when at least two dates are present.
+
+### Strategy Implementation Audit
+
+For baseline experiments, the implementation audit checks whether the OW
+target-impact trades, fitted-regression evaluator, and fitted-regression proxy
+strategy are mechanically consistent:
+
+```bash
+python -m src.strategy_implementation_audit \
+  --experiment-path outputs/full_runs/full_pair1_baseline \
+  --pair-id 1
+```
+
+It saves `audit_strategy_implementation_report.md`, CSV audit tables, and
+`audit_figures/`. The audit compares OW and proxy turnover, cost bps of
+notional turnover, proxy cost reconstruction, proxy internal costs versus the
+full reduced-form evaluator on the same proxy trades, feature extrapolation,
+order-flow unit consistency, timing, and fitted cost sign conventions.
+
+To run it automatically after a baseline run:
+
+```bash
+python -m src.run_integrated_rolling_simulations \
+  --mode single_pair \
+  --pair-id 1 \
+  --scenario baseline \
+  --save-trades \
+  --run-strategy-audit \
+  --experiment-name full_pair1_baseline_audit
+```
+
+If `--save-trades` is omitted, strict OW row-level trade-file checks are marked
+`SKIP`; evaluator-based sizing and cost diagnostics still run where possible.

@@ -1,8 +1,14 @@
-"""Reduced-form AFS-style strategy for section 2.5.
+"""Theoretical reduced-form AFS-style strategy for section 2.5.
 
 This module implements a flexible reduced-form strategy using the course
 formulae, while keeping fitted parameters external so calibrated model outputs
 can be plugged in later.
+
+Important integration caveat:
+Teammate's fitted ``reduced_form`` output is a per-stock/per-rolling-pair OLS
+regression for within-bin ``ret_bps``. It is not the dynamic AFS strategy
+implemented here. For teammate-model integration and wrong-model stress, use
+``src.reduced_form_regression_evaluator`` instead of this module.
 """
 
 from pathlib import Path

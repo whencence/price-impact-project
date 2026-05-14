@@ -102,7 +102,7 @@ def _hist(series: pd.Series, title: str, xlabel: str, path: Path) -> None:
     ax.set_title(title)
     ax.set_xlabel(xlabel)
     fig.tight_layout()
-    fig.savefig(path, dpi=150)
+    fig.savefig(path, dpi=150, bbox_inches="tight")
     plt.close(fig)
 
 
@@ -119,7 +119,7 @@ def save_reduced_form_plots(trades_df: pd.DataFrame, daily_metrics: pd.DataFrame
     ax.set_ylabel("wealth")
     fig.autofmt_xdate()
     fig.tight_layout()
-    fig.savefig(fig_dir / "reduced_form_cumulative_wealth.png", dpi=150)
+    fig.savefig(fig_dir / "reduced_form_cumulative_wealth.png", dpi=150, bbox_inches="tight")
     plt.close(fig)
 
     fig, ax = plt.subplots(figsize=(10, 5))
@@ -128,7 +128,7 @@ def save_reduced_form_plots(trades_df: pd.DataFrame, daily_metrics: pd.DataFrame
     ax.set_ylabel("net PnL")
     fig.autofmt_xdate()
     fig.tight_layout()
-    fig.savefig(fig_dir / "reduced_form_daily_net_pnl.png", dpi=150)
+    fig.savefig(fig_dir / "reduced_form_daily_net_pnl.png", dpi=150, bbox_inches="tight")
     plt.close(fig)
 
     fig, ax = plt.subplots(figsize=(10, 5))
@@ -138,7 +138,7 @@ def save_reduced_form_plots(trades_df: pd.DataFrame, daily_metrics: pd.DataFrame
     ax.legend()
     fig.autofmt_xdate()
     fig.tight_layout()
-    fig.savefig(fig_dir / "reduced_form_gross_vs_net_pnl.png", dpi=150)
+    fig.savefig(fig_dir / "reduced_form_gross_vs_net_pnl.png", dpi=150, bbox_inches="tight")
     plt.close(fig)
 
     fig, ax = plt.subplots(figsize=(10, 5))
@@ -147,7 +147,7 @@ def save_reduced_form_plots(trades_df: pd.DataFrame, daily_metrics: pd.DataFrame
     ax.set_ylabel("drawdown")
     fig.autofmt_xdate()
     fig.tight_layout()
-    fig.savefig(fig_dir / "reduced_form_drawdown.png", dpi=150)
+    fig.savefig(fig_dir / "reduced_form_drawdown.png", dpi=150, bbox_inches="tight")
     plt.close(fig)
 
     if len(trades_df):
@@ -167,7 +167,7 @@ def save_reduced_form_plots(trades_df: pd.DataFrame, daily_metrics: pd.DataFrame
         axes[0].set_title("Reduced-form sample stock/day path")
         fig.autofmt_xdate()
         fig.tight_layout()
-        fig.savefig(fig_dir / "reduced_form_sample_strategy_path.png", dpi=150)
+        fig.savefig(fig_dir / "reduced_form_sample_strategy_path.png", dpi=150, bbox_inches="tight")
         plt.close(fig)
 
         valid = sample[["target_impact", "impact_after_trade"]].dropna()
@@ -177,7 +177,7 @@ def save_reduced_form_plots(trades_df: pd.DataFrame, daily_metrics: pd.DataFrame
         ax.set_xlabel("target impact")
         ax.set_ylabel("impact after trade")
         fig.tight_layout()
-        fig.savefig(fig_dir / "reduced_form_target_vs_impact.png", dpi=150)
+        fig.savefig(fig_dir / "reduced_form_target_vs_impact.png", dpi=150, bbox_inches="tight")
         plt.close(fig)
 
     _hist(trades_df["lambda_t"], "Reduced-form lambda_t histogram", "lambda_t", fig_dir / "reduced_form_lambda_t_histogram.png")

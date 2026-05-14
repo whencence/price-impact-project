@@ -75,11 +75,16 @@ def parse_bin_timestamp(df: pd.DataFrame) -> pd.DataFrame:
     missing = required.difference(df.columns)
     if missing:
         raise ValueError(f"binSamples missing required timestamp columns: {sorted(missing)}")
-    out = df.copy()
+    # Some integrated dataframes may already contain timestamp/datetime columns.
+    # If an upstream notebook accidentally creates duplicate column labels,
+    # out["timestamp"] becomes a DataFrame and boolean checks become ambiguous.
+    # Keep the first occurrence and rebuild timestamp from date/time below.
+    out = df.loc[:, ~df.columns.duplicated()].copy()
     out["date_parsed"] = _parse_date_series(out["date"])
     out["timestamp"] = out["date_parsed"] + _parse_time_to_timedelta(out["time"])
-    if out["timestamp"].isna().any():
-        _warn(f"{int(out['timestamp'].isna().sum())} rows have unparseable timestamps")
+    missing_ts = out["timestamp"].isna()
+    if bool(missing_ts.any()):
+        _warn(f"{int(missing_ts.sum())} rows have unparseable timestamps")
     return out.sort_values(["stock", "date_parsed", "timestamp"]).reset_index(drop=True)
 
 

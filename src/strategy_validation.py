@@ -100,9 +100,10 @@ def validate_ow_strategy_output(trades_df: pd.DataFrame, config: OWStrategyConfi
         f"sample_max_error={inverse_error:.3g}",
     )
 
+    lambda_series = pd.to_numeric(trades_df.get("impact_lambda", config.impact_lambda), errors="coerce").fillna(config.impact_lambda)
     impact_error = (
         trades_df["impact_after_trade"]
-        - (trades_df["impact_before_trade"] + config.impact_lambda * trades_df["normalized_trade"])
+        - (trades_df["impact_before_trade"] + lambda_series * trades_df["normalized_trade"])
     ).abs().max()
     checks["impact_dynamics"] = _result("PASS" if impact_error < 1e-10 else "FAIL", f"max_error={impact_error:.3g}")
 
@@ -111,7 +112,15 @@ def validate_ow_strategy_output(trades_df: pd.DataFrame, config: OWStrategyConfi
 
     if config.liquidate_at_close:
         final_pos = trades_df.groupby(["stock", "date"], sort=False)["position_after"].tail(1).abs().max()
-        checks["liquidation"] = _result("PASS" if final_pos < 1e-8 else "FAIL", f"max_final_abs_position={final_pos:.3g}")
+        capped_liquidation = (
+            config.max_participation_rate_per_trade is not None
+            or config.max_abs_trade_adv_fraction is not None
+            or config.max_abs_position_adv_fraction is not None
+        )
+        checks["liquidation"] = _result(
+            "PASS" if final_pos < 1e-8 else ("WARN" if capped_liquidation else "FAIL"),
+            f"max_final_abs_position={final_pos:.3g}; capped_liquidation={capped_liquidation}",
+        )
     else:
         checks["liquidation"] = _result("WARN", "liquidate_at_close is False")
 
@@ -138,6 +147,31 @@ def validate_ow_strategy_output(trades_df: pd.DataFrame, config: OWStrategyConfi
         "WARN" if absurd_share > 0.05 else "PASS",
         f"share rows participation > 5%={absurd_share:.2%}; max={finite_participation.max() if len(finite_participation) else np.nan}",
     )
+    if config.max_participation_rate_per_trade is not None and len(finite_participation):
+        cap = config.max_participation_rate_per_trade
+        max_part = float(finite_participation.max())
+        checks["participation_cap"] = _result(
+            "PASS" if max_part <= cap + 1e-9 else "FAIL",
+            f"max={max_part:.6g}; cap={cap:.6g}",
+        )
+    if "trade_clipped" in trades_df.columns:
+        share = float(trades_df["trade_clipped"].astype(bool).mean())
+        checks["trade_clipping_share"] = _result(
+            "WARN" if share > 0.5 else "PASS",
+            f"share_trade_clipped={share:.2%}",
+        )
+    if "position_clipped" in trades_df.columns:
+        share = float(trades_df["position_clipped"].astype(bool).mean())
+        checks["position_clipping_share"] = _result(
+            "WARN" if share > 0.5 else "PASS",
+            f"share_position_clipped={share:.2%}",
+        )
+    if {"position_after", "ADV"}.issubset(trades_df.columns):
+        pos_over_adv = trades_df["position_after"].abs() / trades_df["ADV"].replace(0, np.nan)
+        checks["position_over_adv"] = _result(
+            "PASS",
+            f"max_abs_position_over_ADV={float(pos_over_adv.max(skipna=True)):.6g}",
+        )
 
     first = trades_df.groupby(["stock", "date"], sort=False).head(1)
     first_pos_ok = np.allclose(first["position_before"], config.initial_position)
