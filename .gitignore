@@ -1,125 +1,42 @@
-```gitignore
-# macOS / editor
-.DS_Store
-.AppleDouble
-.LSOverride
-._*
-.idea/
-.vscode/
-*.swp
-*.swo
-*~
-
-# Python caches / build artifacts
+cat > .gitignore <<'EOF'
+# Python
 __pycache__/
 *.py[cod]
-*$py.class
+.ipynb_checkpoints/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
-.coverage
-htmlcov/
-build/
-dist/
-*.egg-info/
 
-# Virtual environments / local env
+# Environments
 .env
-.env.*
-!.env.example
 .venv/
 venv/
 env/
-ENV/
-.ipynb_checkpoints/
+*.egg-info/
 
-# Logs / runtime artifacts
-*.log
-logs/
-debug/
-tmp/
-temp/
-.cache/
-
-# Raw and processed market data
+# Data
 data/
+*.csv
 *.parquet
 *.feather
 *.h5
 *.hdf5
-*.pkl
-*.pickle
-*.npy
-*.npz
 
-# Generated experiment outputs
-outputs/
-!outputs/
-!outputs/report_tables/
-!outputs/report_tables/*.tex
-!outputs/presentation_assets/
-!outputs/presentation_assets/latex/
-!outputs/presentation_assets/latex/*.tex
-!outputs/presentation_assets/tables/
-!outputs/presentation_assets/tables/*.tex
-!outputs/presentation_assets/tables/*.csv
-
-# Always ignore large run artifacts even under outputs
+# Large/generated outputs
 outputs/full_runs/
-outputs/rolling_runs/
-outputs/stress/
-outputs/strategy/
-outputs/**/debug/
-outputs/**/logs/
+outputs/night_logs/
+outputs/**/*.csv
 outputs/**/*.parquet
 outputs/**/*.pkl
-outputs/**/*.pickle
 outputs/**/*.npy
 outputs/**/*.npz
 
-# Generated figures from runs
-figures/
-outputs/**/*.png
-outputs/**/*.jpg
-outputs/**/*.jpeg
-outputs/**/*.pdf
-outputs/**/*.svg
+# Keep final lightweight artifacts if needed
+!outputs/final_keep/
+!outputs/final_keep/**
 
-# Explicitly allow selected final presentation/report figures if committed intentionally
-!outputs/presentation_assets/figures/
-!outputs/presentation_assets/figures/*.png
-
-# CSV experiment dumps by default
-*.csv
-!outputs/report_tables/*.csv
-!outputs/presentation_assets/tables/*.csv
-
-# LaTeX build byproducts
-*.aux
-*.bbl
-*.bcf
-*.blg
-*.fdb_latexmk
-*.fls
-*.lof
-*.log
-*.lot
-*.nav
-*.out
-*.run.xml
-*.snm
-*.synctex.gz
-*.toc
-*.vrb
-
-# Keep source, notebooks, docs, and LaTeX source trackable
-!src/
-!notebooks/
-!README*
-!*.md
-!*.tex
-!*.bib
-!*.sty
-!*.cls
-!*.ipynb
-```
+# OS / IDE
+.DS_Store
+.vscode/
+.idea/
+EOF

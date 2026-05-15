@@ -1,0 +1,3 @@
+pair_id,strategy_model,assumed_model,total_turnover,total_notional_turnover,max_participation_rate,mean_participation_rate,total_internal_proxy_cost,total_internal_proxy_net_pnl
+10,OW_transient_proxy,OW_transient,321927710.22303987,63299010265.296814,0.01,0.0002479011680650679,462351.9807626151,33925681.34087262
+10,reduced_form_proxy,reduced_form,352077629.06933105,58216186360.810905,0.01,0.000286918567707288,422957.9125561254,31904305.933204427

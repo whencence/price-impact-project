@@ -1,0 +1,6 @@
+# Signal Delay Report
+
+```text
+ pair_id                      scenario_name       scenario_type  total_gross_pnl  total_net_pnl  total_signed_impact_cost_normalized  total_quadratic_impact_cost_normalized  mean_daily_net_pnl  std_daily_net_pnl  daily_sharpe  annualized_sharpe  total_signed_volume_turnover  total_notional_turnover  average_daily_turnover_shares  average_daily_turnover_notional  total_normalized_turnover  max_participation_rate  mean_participation_rate  max_drawdown  max_daily_drawdown  max_abs_position  max_abs_impact  number_of_trades  number_of_stock_days  mean_abs_trade  median_abs_trade   rows  rows_with_scaling  rows_skipped_due_to_missing_scaling     strategy_model
+       4 signal_delay_1m_OW_transient_proxy signal_delay_stress     3.633913e+07   3.559211e+07                                  0.0                            747016.41536        1.617823e+06       1.178278e+06      1.373041          21.796345                  4.512483e+08             6.814402e+10                   2.051128e+07                     3.097456e+09                 227.178428                    0.01                 0.000231 -1.336714e+06                 0.0     876659.652859        0.101889            875626                   440      458.473346        205.412397 984241             984241                                    0 OW_transient_proxy
+```

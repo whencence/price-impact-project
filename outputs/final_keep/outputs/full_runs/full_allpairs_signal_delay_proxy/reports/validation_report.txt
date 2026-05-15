@@ -1,0 +1,485 @@
+Integrated Validation Report
+============================
+
+run_id: 20260515_032727
+
+- reportable_strategy_is_proxy: PASS - strategy_model=OW_transient_proxy
+- baseline_uses_OW_transient_proxy: PASS - reportable strategy_model=OW_transient_proxy
+- delta_mid_consistency: PASS - max_error=0
+- gross_pnl_uses_position_before: PASS - max_error=0
+- position_dynamics: PASS - max_error=0
+- daily_position_reset: PASS - max_first_abs_position=0
+- final_position: WARN - max_final_abs_position=5.47e+04; capped=True
+- no_lookahead_pnl_note: PASS - gross PnL is position_before*delta_mid; aggregate difference vs position_after convention=8.73e+06
+- alpha_trade_timing_note: PASS - trade at row t uses alpha_t and affects position_after_t; PnL over t-1 to t uses position_before_t
+- alpha_future_return_corr: PASS - corr=0.1904
+- position_future_return_corr: PASS - corr=0.02769
+- trade_alpha_corr: PASS - corr_trade_alpha=0.5366; corr_position_alpha=0.5929
+- sign_alignment: PASS - share_position_same_sign_as_alpha=65.28%; share_trade_same_sign_as_alpha=85.75%
+- gross_alpha_capture: PASS - gross_pnl=3.30234e+07
+- ow_regression_orderflow_market_plus_strategy: PASS - max_error=0
+- ow_regression_marginal_impact_formula: PASS - max_error=0
+- ow_regression_bps_to_price_formula: PASS - max_error=5.55e-17
+- ow_regression_cost_formula: PASS - max_error=0
+- ow_regression_cost_sign_sanity: PASS - share_same_direction=59.79%; share_positive_cost=59.79%; total_signed=624763; total_abs=1.22263e+06; netout_ratio=0.511
+- ow_regression_cost_subtraction_convention: PASS - net_pnl_fitted_model = gross_pnl - fitted_impact_cost_signed; positive fitted cost is adverse and subtracted
+- reduced_form_orderflow_market_plus_strategy: PASS - max_error=0
+- reduced_form_marginal_impact_formula: PASS - max_error=0
+- reduced_form_bps_to_price_formula: PASS - max_error=4.44e-16
+- reduced_form_cost_formula: PASS - max_error=0
+- reduced_form_cost_sign_sanity: PASS - share_same_direction=57.79%; share_positive_cost=57.79%; total_signed=673812; total_abs=2.45706e+06; netout_ratio=0.274
+- reduced_form_cost_subtraction_convention: PASS - net_pnl_fitted_model = gross_pnl - fitted_impact_cost_signed; positive fitted cost is adverse and subtracted
+- participation_cap: PASS - max=0.01; mean=0.000160605; cap=0.01
+- position_over_adv: PASS - max=0.05
+- trade_clipped_share: PASS - share=6.39%
+- fitted_marginal_impact_scale: PASS - mean_abs=0.2988; median_abs=0.1502; p95_abs=1.076; max_abs=219.2
+- notional_turnover: PASS - total_notional_turnover=4.27869e+10
+- signal_delay_uses_OW_transient_proxy: PASS - strategy_model=OW_transient_proxy
+- no_legacy_ow_in_final_outputs: PASS - legacy_outputs_present=False
+- reportable_strategy_is_proxy: PASS - strategy_model=OW_transient_proxy
+- baseline_uses_OW_transient_proxy: PASS - reportable strategy_model=OW_transient_proxy
+- delta_mid_consistency: PASS - max_error=0
+- gross_pnl_uses_position_before: PASS - max_error=0
+- position_dynamics: PASS - max_error=0
+- daily_position_reset: PASS - max_first_abs_position=0
+- final_position: WARN - max_final_abs_position=4.5e+04; capped=True
+- no_lookahead_pnl_note: PASS - gross PnL is position_before*delta_mid; aggregate difference vs position_after convention=1.06e+07
+- alpha_trade_timing_note: PASS - trade at row t uses alpha_t and affects position_after_t; PnL over t-1 to t uses position_before_t
+- alpha_future_return_corr: PASS - corr=0.2199
+- position_future_return_corr: PASS - corr=0.05831
+- trade_alpha_corr: PASS - corr_trade_alpha=0.5172; corr_position_alpha=0.6204
+- sign_alignment: PASS - share_position_same_sign_as_alpha=67.14%; share_trade_same_sign_as_alpha=84.17%
+- gross_alpha_capture: PASS - gross_pnl=4.2985e+07
+- ow_regression_orderflow_market_plus_strategy: PASS - max_error=0
+- ow_regression_marginal_impact_formula: PASS - max_error=0
+- ow_regression_bps_to_price_formula: PASS - max_error=5.55e-17
+- ow_regression_cost_formula: PASS - max_error=0
+- ow_regression_cost_sign_sanity: PASS - share_same_direction=60.52%; share_positive_cost=60.52%; total_signed=690710; total_abs=1.44535e+06; netout_ratio=0.478
+- ow_regression_cost_subtraction_convention: PASS - net_pnl_fitted_model = gross_pnl - fitted_impact_cost_signed; positive fitted cost is adverse and subtracted
+- reduced_form_orderflow_market_plus_strategy: PASS - max_error=0
+- reduced_form_marginal_impact_formula: PASS - max_error=0
+- reduced_form_bps_to_price_formula: PASS - max_error=8.88e-16
+- reduced_form_cost_formula: PASS - max_error=0
+- reduced_form_cost_sign_sanity: PASS - share_same_direction=60.09%; share_positive_cost=60.09%; total_signed=893339; total_abs=2.90718e+06; netout_ratio=0.307
+- reduced_form_cost_subtraction_convention: PASS - net_pnl_fitted_model = gross_pnl - fitted_impact_cost_signed; positive fitted cost is adverse and subtracted
+- participation_cap: PASS - max=0.01; mean=0.000190459; cap=0.01
+- position_over_adv: PASS - max=0.05
+- trade_clipped_share: PASS - share=8.46%
+- fitted_marginal_impact_scale: PASS - mean_abs=0.2999; median_abs=0.1533; p95_abs=1.077; max_abs=69.62
+- notional_turnover: PASS - total_notional_turnover=4.99463e+10
+- signal_delay_uses_OW_transient_proxy: PASS - strategy_model=OW_transient_proxy
+- no_legacy_ow_in_final_outputs: PASS - legacy_outputs_present=False
+- reportable_strategy_is_proxy: PASS - strategy_model=OW_transient_proxy
+- baseline_uses_OW_transient_proxy: PASS - reportable strategy_model=OW_transient_proxy
+- delta_mid_consistency: PASS - max_error=0
+- gross_pnl_uses_position_before: PASS - max_error=0
+- position_dynamics: PASS - max_error=0
+- daily_position_reset: PASS - max_first_abs_position=0
+- final_position: WARN - max_final_abs_position=4.82e+04; capped=True
+- no_lookahead_pnl_note: PASS - gross PnL is position_before*delta_mid; aggregate difference vs position_after convention=8.63e+06
+- alpha_trade_timing_note: PASS - trade at row t uses alpha_t and affects position_after_t; PnL over t-1 to t uses position_before_t
+- alpha_future_return_corr: PASS - corr=0.232
+- position_future_return_corr: PASS - corr=0.05848
+- trade_alpha_corr: PASS - corr_trade_alpha=0.5149; corr_position_alpha=0.639
+- sign_alignment: PASS - share_position_same_sign_as_alpha=66.06%; share_trade_same_sign_as_alpha=84.94%
+- gross_alpha_capture: PASS - gross_pnl=3.31259e+07
+- ow_regression_orderflow_market_plus_strategy: PASS - max_error=0
+- ow_regression_marginal_impact_formula: PASS - max_error=0
+- ow_regression_bps_to_price_formula: PASS - max_error=2.22e-16
+- ow_regression_cost_formula: PASS - max_error=0
+- ow_regression_cost_sign_sanity: PASS - share_same_direction=63.81%; share_positive_cost=63.81%; total_signed=655311; total_abs=1.01586e+06; netout_ratio=0.645
+- ow_regression_cost_subtraction_convention: PASS - net_pnl_fitted_model = gross_pnl - fitted_impact_cost_signed; positive fitted cost is adverse and subtracted
+- reduced_form_orderflow_market_plus_strategy: PASS - max_error=0
+- reduced_form_marginal_impact_formula: PASS - max_error=0
+- reduced_form_bps_to_price_formula: PASS - max_error=1.78e-15
+- reduced_form_cost_formula: PASS - max_error=0
+- reduced_form_cost_sign_sanity: PASS - share_same_direction=62.73%; share_positive_cost=62.73%; total_signed=748175; total_abs=2.43624e+06; netout_ratio=0.307
+- reduced_form_cost_subtraction_convention: PASS - net_pnl_fitted_model = gross_pnl - fitted_impact_cost_signed; positive fitted cost is adverse and subtracted
+- participation_cap: PASS - max=0.01; mean=0.00018442; cap=0.01
+- position_over_adv: PASS - max=0.05
+- trade_clipped_share: PASS - share=6.66%
+- fitted_marginal_impact_scale: PASS - mean_abs=0.2775; median_abs=0.1319; p95_abs=1.037; max_abs=59.01
+- notional_turnover: PASS - total_notional_turnover=4.38863e+10
+- signal_delay_uses_OW_transient_proxy: PASS - strategy_model=OW_transient_proxy
+- no_legacy_ow_in_final_outputs: PASS - legacy_outputs_present=False
+- reportable_strategy_is_proxy: PASS - strategy_model=OW_transient_proxy
+- baseline_uses_OW_transient_proxy: PASS - reportable strategy_model=OW_transient_proxy
+- delta_mid_consistency: PASS - max_error=0
+- gross_pnl_uses_position_before: PASS - max_error=0
+- position_dynamics: PASS - max_error=0
+- daily_position_reset: PASS - max_first_abs_position=0
+- final_position: WARN - max_final_abs_position=1.24e+05; capped=True
+- no_lookahead_pnl_note: PASS - gross PnL is position_before*delta_mid; aggregate difference vs position_after convention=1.53e+07
+- alpha_trade_timing_note: PASS - trade at row t uses alpha_t and affects position_after_t; PnL over t-1 to t uses position_before_t
+- alpha_future_return_corr: PASS - corr=0.2077
+- position_future_return_corr: PASS - corr=0.05135
+- trade_alpha_corr: PASS - corr_trade_alpha=0.5285; corr_position_alpha=0.6377
+- sign_alignment: PASS - share_position_same_sign_as_alpha=67.41%; share_trade_same_sign_as_alpha=85.15%
+- gross_alpha_capture: PASS - gross_pnl=5.51089e+07
+- ow_regression_orderflow_market_plus_strategy: PASS - max_error=0
+- ow_regression_marginal_impact_formula: PASS - max_error=0
+- ow_regression_bps_to_price_formula: PASS - max_error=1.78e-15
+- ow_regression_cost_formula: PASS - max_error=0
+- ow_regression_cost_sign_sanity: PASS - share_same_direction=67.04%; share_positive_cost=67.04%; total_signed=543748; total_abs=1.48066e+06; netout_ratio=0.367
+- ow_regression_cost_subtraction_convention: PASS - net_pnl_fitted_model = gross_pnl - fitted_impact_cost_signed; positive fitted cost is adverse and subtracted
+- reduced_form_orderflow_market_plus_strategy: PASS - max_error=0
+- reduced_form_marginal_impact_formula: PASS - max_error=0
+- reduced_form_bps_to_price_formula: PASS - max_error=1.42e-14
+- reduced_form_cost_formula: PASS - max_error=0
+- reduced_form_cost_sign_sanity: PASS - share_same_direction=62.27%; share_positive_cost=62.27%; total_signed=289065; total_abs=4.40039e+06; netout_ratio=0.0657
+- reduced_form_cost_subtraction_convention: PASS - net_pnl_fitted_model = gross_pnl - fitted_impact_cost_signed; positive fitted cost is adverse and subtracted
+- participation_cap: PASS - max=0.01; mean=0.000230994; cap=0.01
+- position_over_adv: PASS - max=0.05
+- trade_clipped_share: PASS - share=11.11%
+- fitted_marginal_impact_scale: PASS - mean_abs=0.3115; median_abs=0.1354; p95_abs=1.144; max_abs=563.6
+- notional_turnover: PASS - total_notional_turnover=6.8202e+10
+- signal_delay_uses_OW_transient_proxy: PASS - strategy_model=OW_transient_proxy
+- no_legacy_ow_in_final_outputs: PASS - legacy_outputs_present=False
+- reportable_strategy_is_proxy: PASS - strategy_model=OW_transient_proxy
+- baseline_uses_OW_transient_proxy: PASS - reportable strategy_model=OW_transient_proxy
+- delta_mid_consistency: PASS - max_error=0
+- gross_pnl_uses_position_before: PASS - max_error=0
+- position_dynamics: PASS - max_error=0
+- daily_position_reset: PASS - max_first_abs_position=0
+- final_position: WARN - max_final_abs_position=7.97e+04; capped=True
+- no_lookahead_pnl_note: PASS - gross PnL is position_before*delta_mid; aggregate difference vs position_after convention=1.35e+07
+- alpha_trade_timing_note: PASS - trade at row t uses alpha_t and affects position_after_t; PnL over t-1 to t uses position_before_t
+- alpha_future_return_corr: PASS - corr=0.1993
+- position_future_return_corr: PASS - corr=0.02817
+- trade_alpha_corr: PASS - corr_trade_alpha=0.53; corr_position_alpha=0.5802
+- sign_alignment: PASS - share_position_same_sign_as_alpha=64.72%; share_trade_same_sign_as_alpha=87.54%
+- gross_alpha_capture: PASS - gross_pnl=6.07932e+07
+- ow_regression_orderflow_market_plus_strategy: PASS - max_error=0
+- ow_regression_marginal_impact_formula: PASS - max_error=0
+- ow_regression_bps_to_price_formula: PASS - max_error=4.44e-16
+- ow_regression_cost_formula: PASS - max_error=0
+- ow_regression_cost_sign_sanity: PASS - share_same_direction=63.15%; share_positive_cost=63.15%; total_signed=706813; total_abs=1.73328e+06; netout_ratio=0.408
+- ow_regression_cost_subtraction_convention: PASS - net_pnl_fitted_model = gross_pnl - fitted_impact_cost_signed; positive fitted cost is adverse and subtracted
+- reduced_form_orderflow_market_plus_strategy: PASS - max_error=0
+- reduced_form_marginal_impact_formula: PASS - max_error=0
+- reduced_form_bps_to_price_formula: PASS - max_error=2.22e-16
+- reduced_form_cost_formula: PASS - max_error=0
+- reduced_form_cost_sign_sanity: PASS - share_same_direction=60.42%; share_positive_cost=60.42%; total_signed=341853; total_abs=2.93255e+06; netout_ratio=0.117
+- reduced_form_cost_subtraction_convention: PASS - net_pnl_fitted_model = gross_pnl - fitted_impact_cost_signed; positive fitted cost is adverse and subtracted
+- participation_cap: PASS - max=0.01; mean=0.000200532; cap=0.01
+- position_over_adv: PASS - max=0.05
+- trade_clipped_share: PASS - share=9.81%
+- fitted_marginal_impact_scale: PASS - mean_abs=0.2607; median_abs=0.1478; p95_abs=0.8966; max_abs=55.65
+- notional_turnover: PASS - total_notional_turnover=7.20883e+10
+- signal_delay_uses_OW_transient_proxy: PASS - strategy_model=OW_transient_proxy
+- no_legacy_ow_in_final_outputs: PASS - legacy_outputs_present=False
+- reportable_strategy_is_proxy: PASS - strategy_model=OW_transient_proxy
+- baseline_uses_OW_transient_proxy: PASS - reportable strategy_model=OW_transient_proxy
+- delta_mid_consistency: PASS - max_error=0
+- gross_pnl_uses_position_before: PASS - max_error=0
+- position_dynamics: PASS - max_error=0
+- daily_position_reset: PASS - max_first_abs_position=0
+- final_position: WARN - max_final_abs_position=5.6e+04; capped=True
+- no_lookahead_pnl_note: PASS - gross PnL is position_before*delta_mid; aggregate difference vs position_after convention=1.01e+07
+- alpha_trade_timing_note: PASS - trade at row t uses alpha_t and affects position_after_t; PnL over t-1 to t uses position_before_t
+- alpha_future_return_corr: PASS - corr=0.2179
+- position_future_return_corr: PASS - corr=0.03209
+- trade_alpha_corr: PASS - corr_trade_alpha=0.539; corr_position_alpha=0.6026
+- sign_alignment: PASS - share_position_same_sign_as_alpha=66.25%; share_trade_same_sign_as_alpha=85.84%
+- gross_alpha_capture: PASS - gross_pnl=3.94791e+07
+- ow_regression_orderflow_market_plus_strategy: PASS - max_error=0
+- ow_regression_marginal_impact_formula: PASS - max_error=0
+- ow_regression_bps_to_price_formula: PASS - max_error=1.11e-16
+- ow_regression_cost_formula: PASS - max_error=0
+- ow_regression_cost_sign_sanity: PASS - share_same_direction=61.11%; share_positive_cost=61.11%; total_signed=634332; total_abs=1.23697e+06; netout_ratio=0.513
+- ow_regression_cost_subtraction_convention: PASS - net_pnl_fitted_model = gross_pnl - fitted_impact_cost_signed; positive fitted cost is adverse and subtracted
+- reduced_form_orderflow_market_plus_strategy: PASS - max_error=0
+- reduced_form_marginal_impact_formula: PASS - max_error=0
+- reduced_form_bps_to_price_formula: PASS - max_error=2.22e-16
+- reduced_form_cost_formula: PASS - max_error=0
+- reduced_form_cost_sign_sanity: PASS - share_same_direction=58.70%; share_positive_cost=58.70%; total_signed=833661; total_abs=1.99538e+06; netout_ratio=0.418
+- reduced_form_cost_subtraction_convention: PASS - net_pnl_fitted_model = gross_pnl - fitted_impact_cost_signed; positive fitted cost is adverse and subtracted
+- participation_cap: PASS - max=0.01; mean=0.000239915; cap=0.01
+- position_over_adv: PASS - max=0.05
+- trade_clipped_share: PASS - share=10.36%
+- fitted_marginal_impact_scale: PASS - mean_abs=0.2214; median_abs=0.1386; p95_abs=0.7003; max_abs=49.22
+- notional_turnover: PASS - total_notional_turnover=6.23685e+10
+- signal_delay_uses_OW_transient_proxy: PASS - strategy_model=OW_transient_proxy
+- no_legacy_ow_in_final_outputs: PASS - legacy_outputs_present=False
+- reportable_strategy_is_proxy: PASS - strategy_model=OW_transient_proxy
+- baseline_uses_OW_transient_proxy: PASS - reportable strategy_model=OW_transient_proxy
+- delta_mid_consistency: PASS - max_error=0
+- gross_pnl_uses_position_before: PASS - max_error=0
+- position_dynamics: PASS - max_error=0
+- daily_position_reset: PASS - max_first_abs_position=0
+- final_position: WARN - max_final_abs_position=7e+04; capped=True
+- no_lookahead_pnl_note: PASS - gross PnL is position_before*delta_mid; aggregate difference vs position_after convention=1.73e+07
+- alpha_trade_timing_note: PASS - trade at row t uses alpha_t and affects position_after_t; PnL over t-1 to t uses position_before_t
+- alpha_future_return_corr: PASS - corr=0.1838
+- position_future_return_corr: PASS - corr=0.0538
+- trade_alpha_corr: PASS - corr_trade_alpha=0.5088; corr_position_alpha=0.5938
+- sign_alignment: PASS - share_position_same_sign_as_alpha=67.27%; share_trade_same_sign_as_alpha=85.05%
+- gross_alpha_capture: PASS - gross_pnl=7.49461e+07
+- ow_regression_orderflow_market_plus_strategy: PASS - max_error=0
+- ow_regression_marginal_impact_formula: PASS - max_error=0
+- ow_regression_bps_to_price_formula: PASS - max_error=2.22e-16
+- ow_regression_cost_formula: PASS - max_error=0
+- ow_regression_cost_sign_sanity: PASS - share_same_direction=65.78%; share_positive_cost=65.78%; total_signed=833753; total_abs=1.63824e+06; netout_ratio=0.509
+- ow_regression_cost_subtraction_convention: PASS - net_pnl_fitted_model = gross_pnl - fitted_impact_cost_signed; positive fitted cost is adverse and subtracted
+- reduced_form_orderflow_market_plus_strategy: PASS - max_error=0
+- reduced_form_marginal_impact_formula: PASS - max_error=0
+- reduced_form_bps_to_price_formula: PASS - max_error=2.22e-16
+- reduced_form_cost_formula: PASS - max_error=0
+- reduced_form_cost_sign_sanity: PASS - share_same_direction=60.99%; share_positive_cost=60.99%; total_signed=1.13336e+06; total_abs=2.99597e+06; netout_ratio=0.378
+- reduced_form_cost_subtraction_convention: PASS - net_pnl_fitted_model = gross_pnl - fitted_impact_cost_signed; positive fitted cost is adverse and subtracted
+- participation_cap: PASS - max=0.01; mean=0.000240659; cap=0.01
+- position_over_adv: PASS - max=0.05
+- trade_clipped_share: PASS - share=11.07%
+- fitted_marginal_impact_scale: PASS - mean_abs=0.2761; median_abs=0.1619; p95_abs=0.8914; max_abs=53.02
+- notional_turnover: PASS - total_notional_turnover=7.83693e+10
+- signal_delay_uses_OW_transient_proxy: PASS - strategy_model=OW_transient_proxy
+- no_legacy_ow_in_final_outputs: PASS - legacy_outputs_present=False
+- reportable_strategy_is_proxy: PASS - strategy_model=OW_transient_proxy
+- baseline_uses_OW_transient_proxy: PASS - reportable strategy_model=OW_transient_proxy
+- delta_mid_consistency: PASS - max_error=0
+- gross_pnl_uses_position_before: PASS - max_error=0
+- position_dynamics: PASS - max_error=0
+- daily_position_reset: PASS - max_first_abs_position=0
+- final_position: WARN - max_final_abs_position=8.37e+04; capped=True
+- no_lookahead_pnl_note: PASS - gross PnL is position_before*delta_mid; aggregate difference vs position_after convention=7.27e+06
+- alpha_trade_timing_note: PASS - trade at row t uses alpha_t and affects position_after_t; PnL over t-1 to t uses position_before_t
+- alpha_future_return_corr: PASS - corr=0.2206
+- position_future_return_corr: PASS - corr=0.03923
+- trade_alpha_corr: PASS - corr_trade_alpha=0.5769; corr_position_alpha=0.5456
+- sign_alignment: PASS - share_position_same_sign_as_alpha=64.32%; share_trade_same_sign_as_alpha=86.62%
+- gross_alpha_capture: PASS - gross_pnl=2.86708e+07
+- ow_regression_orderflow_market_plus_strategy: PASS - max_error=0
+- ow_regression_marginal_impact_formula: PASS - max_error=0
+- ow_regression_bps_to_price_formula: PASS - max_error=2.22e-16
+- ow_regression_cost_formula: PASS - max_error=0
+- ow_regression_cost_sign_sanity: PASS - share_same_direction=60.82%; share_positive_cost=60.82%; total_signed=501329; total_abs=1.67982e+06; netout_ratio=0.298
+- ow_regression_cost_subtraction_convention: PASS - net_pnl_fitted_model = gross_pnl - fitted_impact_cost_signed; positive fitted cost is adverse and subtracted
+- reduced_form_orderflow_market_plus_strategy: PASS - max_error=0
+- reduced_form_marginal_impact_formula: PASS - max_error=0
+- reduced_form_bps_to_price_formula: PASS - max_error=8.88e-16
+- reduced_form_cost_formula: PASS - max_error=0
+- reduced_form_cost_sign_sanity: PASS - share_same_direction=59.38%; share_positive_cost=59.38%; total_signed=150631; total_abs=2.43279e+06; netout_ratio=0.0619
+- reduced_form_cost_subtraction_convention: PASS - net_pnl_fitted_model = gross_pnl - fitted_impact_cost_signed; positive fitted cost is adverse and subtracted
+- participation_cap: PASS - max=0.01; mean=0.000169849; cap=0.01
+- position_over_adv: PASS - max=0.05
+- trade_clipped_share: PASS - share=6.56%
+- fitted_marginal_impact_scale: PASS - mean_abs=0.2826; median_abs=0.1555; p95_abs=0.9363; max_abs=164
+- notional_turnover: PASS - total_notional_turnover=3.61722e+10
+- signal_delay_uses_OW_transient_proxy: PASS - strategy_model=OW_transient_proxy
+- no_legacy_ow_in_final_outputs: PASS - legacy_outputs_present=False
+- reportable_strategy_is_proxy: PASS - strategy_model=OW_transient_proxy
+- baseline_uses_OW_transient_proxy: PASS - reportable strategy_model=OW_transient_proxy
+- delta_mid_consistency: PASS - max_error=0
+- gross_pnl_uses_position_before: PASS - max_error=0
+- position_dynamics: PASS - max_error=0
+- daily_position_reset: PASS - max_first_abs_position=0
+- final_position: WARN - max_final_abs_position=6.67e+04; capped=True
+- no_lookahead_pnl_note: PASS - gross PnL is position_before*delta_mid; aggregate difference vs position_after convention=1.69e+07
+- alpha_trade_timing_note: PASS - trade at row t uses alpha_t and affects position_after_t; PnL over t-1 to t uses position_before_t
+- alpha_future_return_corr: PASS - corr=0.2144
+- position_future_return_corr: PASS - corr=0.05365
+- trade_alpha_corr: PASS - corr_trade_alpha=0.4841; corr_position_alpha=0.5987
+- sign_alignment: PASS - share_position_same_sign_as_alpha=68.57%; share_trade_same_sign_as_alpha=84.14%
+- gross_alpha_capture: PASS - gross_pnl=1.05542e+08
+- ow_regression_orderflow_market_plus_strategy: PASS - max_error=0
+- ow_regression_marginal_impact_formula: PASS - max_error=0
+- ow_regression_bps_to_price_formula: PASS - max_error=1.11e-16
+- ow_regression_cost_formula: PASS - max_error=0
+- ow_regression_cost_sign_sanity: PASS - share_same_direction=63.66%; share_positive_cost=63.66%; total_signed=1.44509e+06; total_abs=2.39943e+06; netout_ratio=0.602
+- ow_regression_cost_subtraction_convention: PASS - net_pnl_fitted_model = gross_pnl - fitted_impact_cost_signed; positive fitted cost is adverse and subtracted
+- reduced_form_orderflow_market_plus_strategy: PASS - max_error=0
+- reduced_form_marginal_impact_formula: PASS - max_error=0
+- reduced_form_bps_to_price_formula: PASS - max_error=8.88e-16
+- reduced_form_cost_formula: PASS - max_error=0
+- reduced_form_cost_sign_sanity: PASS - share_same_direction=59.42%; share_positive_cost=59.42%; total_signed=2.5313e+06; total_abs=7.2925e+06; netout_ratio=0.347
+- reduced_form_cost_subtraction_convention: PASS - net_pnl_fitted_model = gross_pnl - fitted_impact_cost_signed; positive fitted cost is adverse and subtracted
+- participation_cap: PASS - max=0.01; mean=0.00027074; cap=0.01
+- position_over_adv: PASS - max=0.05
+- trade_clipped_share: PASS - share=12.20%
+- fitted_marginal_impact_scale: PASS - mean_abs=0.3159; median_abs=0.1692; p95_abs=1.012; max_abs=120.1
+- notional_turnover: PASS - total_notional_turnover=1.16327e+11
+- signal_delay_uses_OW_transient_proxy: PASS - strategy_model=OW_transient_proxy
+- no_legacy_ow_in_final_outputs: PASS - legacy_outputs_present=False
+- reportable_strategy_is_proxy: PASS - strategy_model=OW_transient_proxy
+- baseline_uses_OW_transient_proxy: PASS - reportable strategy_model=OW_transient_proxy
+- delta_mid_consistency: PASS - max_error=0
+- gross_pnl_uses_position_before: PASS - max_error=0
+- position_dynamics: PASS - max_error=0
+- daily_position_reset: PASS - max_first_abs_position=0
+- final_position: WARN - max_final_abs_position=5.42e+04; capped=True
+- no_lookahead_pnl_note: PASS - gross PnL is position_before*delta_mid; aggregate difference vs position_after convention=8.52e+06
+- alpha_trade_timing_note: PASS - trade at row t uses alpha_t and affects position_after_t; PnL over t-1 to t uses position_before_t
+- alpha_future_return_corr: PASS - corr=0.2
+- position_future_return_corr: PASS - corr=0.02696
+- trade_alpha_corr: PASS - corr_trade_alpha=0.5798; corr_position_alpha=0.5689
+- sign_alignment: PASS - share_position_same_sign_as_alpha=66.68%; share_trade_same_sign_as_alpha=85.27%
+- gross_alpha_capture: PASS - gross_pnl=3.4388e+07
+- ow_regression_orderflow_market_plus_strategy: PASS - max_error=0
+- ow_regression_marginal_impact_formula: PASS - max_error=0
+- ow_regression_bps_to_price_formula: PASS - max_error=1.11e-16
+- ow_regression_cost_formula: PASS - max_error=0
+- ow_regression_cost_sign_sanity: PASS - share_same_direction=64.17%; share_positive_cost=64.17%; total_signed=816685; total_abs=2.12873e+06; netout_ratio=0.384
+- ow_regression_cost_subtraction_convention: PASS - net_pnl_fitted_model = gross_pnl - fitted_impact_cost_signed; positive fitted cost is adverse and subtracted
+- reduced_form_orderflow_market_plus_strategy: PASS - max_error=0
+- reduced_form_marginal_impact_formula: PASS - max_error=0
+- reduced_form_bps_to_price_formula: PASS - max_error=8.88e-16
+- reduced_form_cost_formula: PASS - max_error=0
+- reduced_form_cost_sign_sanity: PASS - share_same_direction=57.99%; share_positive_cost=57.99%; total_signed=458472; total_abs=3.23248e+06; netout_ratio=0.142
+- reduced_form_cost_subtraction_convention: PASS - net_pnl_fitted_model = gross_pnl - fitted_impact_cost_signed; positive fitted cost is adverse and subtracted
+- participation_cap: PASS - max=0.01; mean=0.000247901; cap=0.01
+- position_over_adv: PASS - max=0.05
+- trade_clipped_share: PASS - share=9.70%
+- fitted_marginal_impact_scale: PASS - mean_abs=0.2791; median_abs=0.1459; p95_abs=0.9361; max_abs=237.4
+- notional_turnover: PASS - total_notional_turnover=6.3299e+10
+- signal_delay_uses_OW_transient_proxy: PASS - strategy_model=OW_transient_proxy
+- no_legacy_ow_in_final_outputs: PASS - legacy_outputs_present=False
+- reportable_strategy_is_proxy: PASS - strategy_model=OW_transient_proxy
+- baseline_uses_OW_transient_proxy: PASS - reportable strategy_model=OW_transient_proxy
+- delta_mid_consistency: PASS - max_error=0
+- gross_pnl_uses_position_before: PASS - max_error=0
+- position_dynamics: PASS - max_error=0
+- daily_position_reset: PASS - max_first_abs_position=0
+- final_position: WARN - max_final_abs_position=6.81e+04; capped=True
+- no_lookahead_pnl_note: PASS - gross PnL is position_before*delta_mid; aggregate difference vs position_after convention=9.26e+06
+- alpha_trade_timing_note: PASS - trade at row t uses alpha_t and affects position_after_t; PnL over t-1 to t uses position_before_t
+- alpha_future_return_corr: PASS - corr=0.1791
+- position_future_return_corr: PASS - corr=0.02383
+- trade_alpha_corr: PASS - corr_trade_alpha=0.5489; corr_position_alpha=0.5695
+- sign_alignment: PASS - share_position_same_sign_as_alpha=68.14%; share_trade_same_sign_as_alpha=86.23%
+- gross_alpha_capture: PASS - gross_pnl=3.60092e+07
+- ow_regression_orderflow_market_plus_strategy: PASS - max_error=0
+- ow_regression_marginal_impact_formula: PASS - max_error=0
+- ow_regression_bps_to_price_formula: PASS - max_error=2.78e-17
+- ow_regression_cost_formula: PASS - max_error=0
+- ow_regression_cost_sign_sanity: PASS - share_same_direction=68.30%; share_positive_cost=68.30%; total_signed=616347; total_abs=1.03845e+06; netout_ratio=0.594
+- ow_regression_cost_subtraction_convention: PASS - net_pnl_fitted_model = gross_pnl - fitted_impact_cost_signed; positive fitted cost is adverse and subtracted
+- reduced_form_orderflow_market_plus_strategy: PASS - max_error=0
+- reduced_form_marginal_impact_formula: PASS - max_error=0
+- reduced_form_bps_to_price_formula: PASS - max_error=3.55e-15
+- reduced_form_cost_formula: PASS - max_error=0
+- reduced_form_cost_sign_sanity: PASS - share_same_direction=58.93%; share_positive_cost=58.93%; total_signed=-584263; total_abs=4.9933e+06; netout_ratio=0.117
+- reduced_form_cost_subtraction_convention: PASS - net_pnl_fitted_model = gross_pnl - fitted_impact_cost_signed; positive fitted cost is adverse and subtracted
+- participation_cap: PASS - max=0.01; mean=0.000350472; cap=0.01
+- position_over_adv: PASS - max=0.05
+- trade_clipped_share: PASS - share=17.53%
+- fitted_marginal_impact_scale: PASS - mean_abs=0.2694; median_abs=0.14; p95_abs=0.7882; max_abs=98.61
+- notional_turnover: PASS - total_notional_turnover=6.65805e+10
+- signal_delay_uses_OW_transient_proxy: PASS - strategy_model=OW_transient_proxy
+- no_legacy_ow_in_final_outputs: PASS - legacy_outputs_present=False
+- all_pairs_strategy_summary.csv: PASS - /Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/all_pairs_strategy_summary.csv
+- all_pairs_stress_summary.csv: PASS - /Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/all_pairs_stress_summary.csv
+- all_selected_pairs_processed: PASS - missing=[]
+- wealth_finite: PASS - aggregate pnl finite
+- participation_rate_reported: PASS - max_participation_rate=0.01
+- total_notional_turnover_reported: PASS - total_notional_turnover=7.00026e+11
+- figure_total_net_pnl_by_pair.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/figures/total_net_pnl_by_pair.png; exists=True; size=21500; modified_after_run_start=True
+- figure_pair_cumulative_wealth_reportable_strategy.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_1/figures/pair_cumulative_wealth_reportable_strategy.png; exists=True; size=41313; modified_after_run_start=True
+- figure_pair_fitted_evaluator_wealth.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_1/figures/pair_fitted_evaluator_wealth.png; exists=True; size=46728; modified_after_run_start=True
+- figure_cumulative_wealth_internal_vs_fitted.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_1/figures/cumulative_wealth_internal_vs_fitted.png; exists=True; size=52885; modified_after_run_start=True
+- figure_gross_pnl_vs_fitted_cost_cumulative.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_1/figures/gross_pnl_vs_fitted_cost_cumulative.png; exists=True; size=51633; modified_after_run_start=True
+- figure_marginal_impact_bps_histogram.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_1/figures/marginal_impact_bps_histogram.png; exists=True; size=26559; modified_after_run_start=True
+- figure_participation_rate_histogram.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_1/figures/participation_rate_histogram.png; exists=True; size=30854; modified_after_run_start=True
+- figure_position_over_ADV_histogram.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_1/figures/position_over_ADV_histogram.png; exists=True; size=28563; modified_after_run_start=True
+- figure_pair_cumulative_wealth_reportable_strategy.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_2/figures/pair_cumulative_wealth_reportable_strategy.png; exists=True; size=37595; modified_after_run_start=True
+- figure_pair_fitted_evaluator_wealth.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_2/figures/pair_fitted_evaluator_wealth.png; exists=True; size=43539; modified_after_run_start=True
+- figure_cumulative_wealth_internal_vs_fitted.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_2/figures/cumulative_wealth_internal_vs_fitted.png; exists=True; size=49470; modified_after_run_start=True
+- figure_gross_pnl_vs_fitted_cost_cumulative.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_2/figures/gross_pnl_vs_fitted_cost_cumulative.png; exists=True; size=47127; modified_after_run_start=True
+- figure_marginal_impact_bps_histogram.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_2/figures/marginal_impact_bps_histogram.png; exists=True; size=26090; modified_after_run_start=True
+- figure_participation_rate_histogram.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_2/figures/participation_rate_histogram.png; exists=True; size=30479; modified_after_run_start=True
+- figure_position_over_ADV_histogram.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_2/figures/position_over_ADV_histogram.png; exists=True; size=25268; modified_after_run_start=True
+- figure_pair_cumulative_wealth_reportable_strategy.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_3/figures/pair_cumulative_wealth_reportable_strategy.png; exists=True; size=41214; modified_after_run_start=True
+- figure_pair_fitted_evaluator_wealth.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_3/figures/pair_fitted_evaluator_wealth.png; exists=True; size=47510; modified_after_run_start=True
+- figure_cumulative_wealth_internal_vs_fitted.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_3/figures/cumulative_wealth_internal_vs_fitted.png; exists=True; size=52300; modified_after_run_start=True
+- figure_gross_pnl_vs_fitted_cost_cumulative.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_3/figures/gross_pnl_vs_fitted_cost_cumulative.png; exists=True; size=52328; modified_after_run_start=True
+- figure_marginal_impact_bps_histogram.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_3/figures/marginal_impact_bps_histogram.png; exists=True; size=26024; modified_after_run_start=True
+- figure_participation_rate_histogram.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_3/figures/participation_rate_histogram.png; exists=True; size=30961; modified_after_run_start=True
+- figure_position_over_ADV_histogram.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_3/figures/position_over_ADV_histogram.png; exists=True; size=30244; modified_after_run_start=True
+- figure_pair_cumulative_wealth_reportable_strategy.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_4/figures/pair_cumulative_wealth_reportable_strategy.png; exists=True; size=38708; modified_after_run_start=True
+- figure_pair_fitted_evaluator_wealth.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_4/figures/pair_fitted_evaluator_wealth.png; exists=True; size=44590; modified_after_run_start=True
+- figure_cumulative_wealth_internal_vs_fitted.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_4/figures/cumulative_wealth_internal_vs_fitted.png; exists=True; size=50948; modified_after_run_start=True
+- figure_gross_pnl_vs_fitted_cost_cumulative.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_4/figures/gross_pnl_vs_fitted_cost_cumulative.png; exists=True; size=48795; modified_after_run_start=True
+- figure_marginal_impact_bps_histogram.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_4/figures/marginal_impact_bps_histogram.png; exists=True; size=27833; modified_after_run_start=True
+- figure_participation_rate_histogram.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_4/figures/participation_rate_histogram.png; exists=True; size=30607; modified_after_run_start=True
+- figure_position_over_ADV_histogram.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_4/figures/position_over_ADV_histogram.png; exists=True; size=28697; modified_after_run_start=True
+- figure_pair_cumulative_wealth_reportable_strategy.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_5/figures/pair_cumulative_wealth_reportable_strategy.png; exists=True; size=37727; modified_after_run_start=True
+- figure_pair_fitted_evaluator_wealth.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_5/figures/pair_fitted_evaluator_wealth.png; exists=True; size=43770; modified_after_run_start=True
+- figure_cumulative_wealth_internal_vs_fitted.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_5/figures/cumulative_wealth_internal_vs_fitted.png; exists=True; size=48657; modified_after_run_start=True
+- figure_gross_pnl_vs_fitted_cost_cumulative.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_5/figures/gross_pnl_vs_fitted_cost_cumulative.png; exists=True; size=47137; modified_after_run_start=True
+- figure_marginal_impact_bps_histogram.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_5/figures/marginal_impact_bps_histogram.png; exists=True; size=24368; modified_after_run_start=True
+- figure_participation_rate_histogram.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_5/figures/participation_rate_histogram.png; exists=True; size=31642; modified_after_run_start=True
+- figure_position_over_ADV_histogram.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_5/figures/position_over_ADV_histogram.png; exists=True; size=26792; modified_after_run_start=True
+- figure_pair_cumulative_wealth_reportable_strategy.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_6/figures/pair_cumulative_wealth_reportable_strategy.png; exists=True; size=38304; modified_after_run_start=True
+- figure_pair_fitted_evaluator_wealth.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_6/figures/pair_fitted_evaluator_wealth.png; exists=True; size=43916; modified_after_run_start=True
+- figure_cumulative_wealth_internal_vs_fitted.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_6/figures/cumulative_wealth_internal_vs_fitted.png; exists=True; size=48878; modified_after_run_start=True
+- figure_gross_pnl_vs_fitted_cost_cumulative.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_6/figures/gross_pnl_vs_fitted_cost_cumulative.png; exists=True; size=48120; modified_after_run_start=True
+- figure_marginal_impact_bps_histogram.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_6/figures/marginal_impact_bps_histogram.png; exists=True; size=25248; modified_after_run_start=True
+- figure_participation_rate_histogram.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_6/figures/participation_rate_histogram.png; exists=True; size=31557; modified_after_run_start=True
+- figure_position_over_ADV_histogram.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_6/figures/position_over_ADV_histogram.png; exists=True; size=26877; modified_after_run_start=True
+- figure_pair_cumulative_wealth_reportable_strategy.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_7/figures/pair_cumulative_wealth_reportable_strategy.png; exists=True; size=39293; modified_after_run_start=True
+- figure_pair_fitted_evaluator_wealth.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_7/figures/pair_fitted_evaluator_wealth.png; exists=True; size=45077; modified_after_run_start=True
+- figure_cumulative_wealth_internal_vs_fitted.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_7/figures/cumulative_wealth_internal_vs_fitted.png; exists=True; size=50825; modified_after_run_start=True
+- figure_gross_pnl_vs_fitted_cost_cumulative.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_7/figures/gross_pnl_vs_fitted_cost_cumulative.png; exists=True; size=48820; modified_after_run_start=True
+- figure_marginal_impact_bps_histogram.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_7/figures/marginal_impact_bps_histogram.png; exists=True; size=25810; modified_after_run_start=True
+- figure_participation_rate_histogram.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_7/figures/participation_rate_histogram.png; exists=True; size=29752; modified_after_run_start=True
+- figure_position_over_ADV_histogram.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_7/figures/position_over_ADV_histogram.png; exists=True; size=28683; modified_after_run_start=True
+- figure_pair_cumulative_wealth_reportable_strategy.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_8/figures/pair_cumulative_wealth_reportable_strategy.png; exists=True; size=42193; modified_after_run_start=True
+- figure_pair_fitted_evaluator_wealth.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_8/figures/pair_fitted_evaluator_wealth.png; exists=True; size=48532; modified_after_run_start=True
+- figure_cumulative_wealth_internal_vs_fitted.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_8/figures/cumulative_wealth_internal_vs_fitted.png; exists=True; size=53852; modified_after_run_start=True
+- figure_gross_pnl_vs_fitted_cost_cumulative.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_8/figures/gross_pnl_vs_fitted_cost_cumulative.png; exists=True; size=53235; modified_after_run_start=True
+- figure_marginal_impact_bps_histogram.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_8/figures/marginal_impact_bps_histogram.png; exists=True; size=31259; modified_after_run_start=True
+- figure_participation_rate_histogram.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_8/figures/participation_rate_histogram.png; exists=True; size=29138; modified_after_run_start=True
+- figure_position_over_ADV_histogram.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_8/figures/position_over_ADV_histogram.png; exists=True; size=30286; modified_after_run_start=True
+- figure_pair_cumulative_wealth_reportable_strategy.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_9/figures/pair_cumulative_wealth_reportable_strategy.png; exists=True; size=40675; modified_after_run_start=True
+- figure_pair_fitted_evaluator_wealth.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_9/figures/pair_fitted_evaluator_wealth.png; exists=True; size=47448; modified_after_run_start=True
+- figure_cumulative_wealth_internal_vs_fitted.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_9/figures/cumulative_wealth_internal_vs_fitted.png; exists=True; size=54618; modified_after_run_start=True
+- figure_gross_pnl_vs_fitted_cost_cumulative.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_9/figures/gross_pnl_vs_fitted_cost_cumulative.png; exists=True; size=51241; modified_after_run_start=True
+- figure_marginal_impact_bps_histogram.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_9/figures/marginal_impact_bps_histogram.png; exists=True; size=24174; modified_after_run_start=True
+- figure_participation_rate_histogram.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_9/figures/participation_rate_histogram.png; exists=True; size=28642; modified_after_run_start=True
+- figure_position_over_ADV_histogram.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_9/figures/position_over_ADV_histogram.png; exists=True; size=30438; modified_after_run_start=True
+- figure_pair_cumulative_wealth_reportable_strategy.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_10/figures/pair_cumulative_wealth_reportable_strategy.png; exists=True; size=40636; modified_after_run_start=True
+- figure_pair_fitted_evaluator_wealth.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_10/figures/pair_fitted_evaluator_wealth.png; exists=True; size=47944; modified_after_run_start=True
+- figure_cumulative_wealth_internal_vs_fitted.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_10/figures/cumulative_wealth_internal_vs_fitted.png; exists=True; size=52216; modified_after_run_start=True
+- figure_gross_pnl_vs_fitted_cost_cumulative.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_10/figures/gross_pnl_vs_fitted_cost_cumulative.png; exists=True; size=51054; modified_after_run_start=True
+- figure_marginal_impact_bps_histogram.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_10/figures/marginal_impact_bps_histogram.png; exists=True; size=22676; modified_after_run_start=True
+- figure_participation_rate_histogram.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_10/figures/participation_rate_histogram.png; exists=True; size=31158; modified_after_run_start=True
+- figure_position_over_ADV_histogram.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_10/figures/position_over_ADV_histogram.png; exists=True; size=26812; modified_after_run_start=True
+- figure_pair_cumulative_wealth_reportable_strategy.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_11/figures/pair_cumulative_wealth_reportable_strategy.png; exists=True; size=40354; modified_after_run_start=True
+- figure_pair_fitted_evaluator_wealth.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_11/figures/pair_fitted_evaluator_wealth.png; exists=True; size=48310; modified_after_run_start=True
+- figure_cumulative_wealth_internal_vs_fitted.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_11/figures/cumulative_wealth_internal_vs_fitted.png; exists=True; size=53990; modified_after_run_start=True
+- figure_gross_pnl_vs_fitted_cost_cumulative.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_11/figures/gross_pnl_vs_fitted_cost_cumulative.png; exists=True; size=51586; modified_after_run_start=True
+- figure_marginal_impact_bps_histogram.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_11/figures/marginal_impact_bps_histogram.png; exists=True; size=22707; modified_after_run_start=True
+- figure_participation_rate_histogram.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_11/figures/participation_rate_histogram.png; exists=True; size=32141; modified_after_run_start=True
+- figure_position_over_ADV_histogram.png: PASS - path=/Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/full_runs/full_allpairs_signal_delay_proxy/pair_11/figures/position_over_ADV_histogram.png; exists=True; size=32191; modified_after_run_start=True
+- portfolio_internal_unique_timestamps: SKIP - row-level internal trades not saved; summary metrics validated instead
+- portfolio_internal_final_matches_total_net_pnl: SKIP - row-level internal trades not saved
+- portfolio_plot_data_build: SKIP - row-level trade/evaluator files not saved for reconciliation
+- portfolio_internal_unique_timestamps: SKIP - row-level internal trades not saved; summary metrics validated instead
+- portfolio_internal_final_matches_total_net_pnl: SKIP - row-level internal trades not saved
+- portfolio_plot_data_build: SKIP - row-level trade/evaluator files not saved for reconciliation
+- portfolio_internal_unique_timestamps: SKIP - row-level internal trades not saved; summary metrics validated instead
+- portfolio_internal_final_matches_total_net_pnl: SKIP - row-level internal trades not saved
+- portfolio_plot_data_build: SKIP - row-level trade/evaluator files not saved for reconciliation
+- portfolio_internal_unique_timestamps: SKIP - row-level internal trades not saved; summary metrics validated instead
+- portfolio_internal_final_matches_total_net_pnl: SKIP - row-level internal trades not saved
+- portfolio_plot_data_build: SKIP - row-level trade/evaluator files not saved for reconciliation
+- portfolio_internal_unique_timestamps: SKIP - row-level internal trades not saved; summary metrics validated instead
+- portfolio_internal_final_matches_total_net_pnl: SKIP - row-level internal trades not saved
+- portfolio_plot_data_build: SKIP - row-level trade/evaluator files not saved for reconciliation
+- portfolio_internal_unique_timestamps: SKIP - row-level internal trades not saved; summary metrics validated instead
+- portfolio_internal_final_matches_total_net_pnl: SKIP - row-level internal trades not saved
+- portfolio_plot_data_build: SKIP - row-level trade/evaluator files not saved for reconciliation
+- portfolio_internal_unique_timestamps: SKIP - row-level internal trades not saved; summary metrics validated instead
+- portfolio_internal_final_matches_total_net_pnl: SKIP - row-level internal trades not saved
+- portfolio_plot_data_build: SKIP - row-level trade/evaluator files not saved for reconciliation
+- portfolio_internal_unique_timestamps: SKIP - row-level internal trades not saved; summary metrics validated instead
+- portfolio_internal_final_matches_total_net_pnl: SKIP - row-level internal trades not saved
+- portfolio_plot_data_build: SKIP - row-level trade/evaluator files not saved for reconciliation
+- portfolio_internal_unique_timestamps: SKIP - row-level internal trades not saved; summary metrics validated instead
+- portfolio_internal_final_matches_total_net_pnl: SKIP - row-level internal trades not saved
+- portfolio_plot_data_build: SKIP - row-level trade/evaluator files not saved for reconciliation
+- portfolio_internal_unique_timestamps: SKIP - row-level internal trades not saved; summary metrics validated instead
+- portfolio_internal_final_matches_total_net_pnl: SKIP - row-level internal trades not saved
+- portfolio_plot_data_build: SKIP - row-level trade/evaluator files not saved for reconciliation
+- portfolio_internal_unique_timestamps: SKIP - row-level internal trades not saved; summary metrics validated instead
+- portfolio_internal_final_matches_total_net_pnl: SKIP - row-level internal trades not saved
+- portfolio_plot_data_build: SKIP - row-level trade/evaluator files not saved for reconciliation
