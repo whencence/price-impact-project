@@ -115,11 +115,11 @@ def save_pair_plots(pair_dir: Path, trades: pd.DataFrame, ow_eval: pd.DataFrame,
         portfolio = make_portfolio_timeseries(trades, "timestamp", ["net_pnl"])
         fig, ax = plt.subplots(figsize=(10, 5))
         ax.plot(portfolio["timestamp"], portfolio["cumulative_net_pnl"], label="my OW")
-        ax.set_title("My OW strategy portfolio cumulative wealth")
+        ax.set_title("Reportable strategy portfolio cumulative wealth")
         ax.legend()
         fig.autofmt_xdate()
         fig.tight_layout()
-        fig.savefig(fig_dir / "pair_cumulative_wealth_my_ow.png", dpi=150, bbox_inches="tight")
+        fig.savefig(fig_dir / "pair_cumulative_wealth_reportable_strategy.png", dpi=150, bbox_inches="tight")
         plt.close(fig)
     if "participation_rate" in trades.columns:
         _hist(
@@ -478,11 +478,11 @@ def save_global_plots(output_dir: Path) -> None:
                 x = np.arange(len(merged))
                 width = 0.38
                 fig, ax = plt.subplots(figsize=(10, 5))
-                ax.bar(x - width / 2, merged["total_net_pnl"], width=width, label="OW target-impact")
-                ax.bar(x + width / 2, merged["total_net_pnl_fitted_proxy"], width=width, label="fitted proxy")
+                ax.bar(x - width / 2, merged["total_net_pnl"], width=width, label="reportable strategy")
+                ax.bar(x + width / 2, merged["total_net_pnl_fitted_proxy"], width=width, label="proxy strategy")
                 ax.set_xticks(x)
                 ax.set_xticklabels(merged["pair_id"].astype(str))
-                ax.set_title("OW vs Fitted Proxy Net PnL by Pair")
+                ax.set_title("Reportable strategy vs proxy strategy net PnL by pair")
                 ax.set_xlabel("pair_id")
                 ax.legend()
                 fig.tight_layout()
@@ -505,8 +505,9 @@ def write_pair_report(
     if len(proxy):
         proxy_lines = [
             "Fitted-regression proxy strategy:",
-            "- This is a local myopic quadratic-cost proxy induced by teammate reduced_form regression slopes.",
-            "- It is not a closed-form dynamic optimal strategy under a structural impact model.",
+            "- Because teammate's fitted impact models are regressions rather than structural control models, proxy strategies are built from local marginal impact slopes.",
+            "- Current reportable strategy: OW_transient_proxy.",
+            "- This is not a closed-form dynamic optimal strategy under a structural impact model.",
             f"- total_gross_pnl_fitted_proxy: {proxy['gross_pnl'].sum()}",
             f"- total_fitted_proxy_cost: {proxy['fitted_impact_cost'].sum()}",
             f"- total_net_pnl_fitted_proxy: {proxy['net_pnl'].sum()}",
@@ -522,7 +523,8 @@ def write_pair_report(
         f"- test_month: {pair_row['test_month']}",
         f"- stocks: {summary.get('n_stocks')}",
         f"- rows: {summary.get('n_rows')}",
-        f"- total_net_pnl_my_ow: {summary.get('total_net_pnl')}",
+        f"- strategy_model: {summary.get('strategy_model')}",
+        f"- total_net_pnl_reportable_strategy: {summary.get('total_net_pnl')}",
         f"- max_participation_rate: {summary.get('max_participation_rate')}",
         f"- mean_participation_rate: {summary.get('mean_participation_rate')}",
         f"- max_abs_position: {summary.get('max_abs_position')}",
@@ -603,12 +605,22 @@ def write_global_report(
     proxy_summary = _safe_read(output_dir / "all_pairs_fitted_proxy_summary.csv")
     first_pair = pair_ids[0] if pair_ids else None
     pair_dir = output_dir / f"pair_{first_pair}" if first_pair is not None else output_dir / "pair_unknown"
-    trades = _safe_read(pair_dir / "my_ow_trades.csv")
+    strategy_model = getattr(run_config, "strategy_model", "OW_transient_proxy") if run_config is not None else "OW_transient_proxy"
+    include_legacy = bool(getattr(run_config, "include_legacy_theoretical_ow", False)) if run_config is not None else False
+    trades = _safe_read(pair_dir / f"{strategy_model}_trades_latest.csv")
+    if trades.empty:
+        trades = _safe_read(pair_dir / f"baseline_{strategy_model}_trades.csv")
+    if trades.empty and include_legacy:
+        trades = _safe_read(pair_dir / "legacy_theoretical_OW_trades.csv")
     ow_eval = _safe_read(pair_dir / "ow_transient_regression_evaluator.csv")
     rf_eval = _safe_read(pair_dir / "reduced_form_regression_evaluator.csv")
     proxy_trades = _safe_read(pair_dir / "fitted_proxy_strategy_trades.csv")
     stress = _safe_read(output_dir / "all_pairs_stress_summary.csv")
     sensitivity = _safe_read(output_dir / "all_pairs_sensitivity_summary.csv")
+    wrong_matrix = _safe_read(pair_dir / "stress" / "wrong_model_matrix.csv")
+    wrong_losses = _safe_read(pair_dir / "stress" / "wrong_model_losses.csv")
+    evaluator_sensitivity = _safe_read(pair_dir / "stress" / "impact_evaluator_sensitivity_summary.csv")
+    wrong_proxy_summary = _safe_read(pair_dir / "stress" / "wrong_model_proxy_strategy_summary.csv")
     validation = _safe_read(output_dir / "integrated_validation_checks.csv")
     alpha_diag = _alpha_diagnostics(trades) if len(trades) else {}
     sizing = _sizing_diagnostics(trades) if len(trades) else {}
@@ -694,6 +706,8 @@ def write_global_report(
         f"- Pair IDs: {pair_ids}",
         f"- Truncated debug run: {truncated}",
         f"- Row-level trade files saved: {save_trades}",
+        f"- Reportable strategy model: {strategy_model}",
+        "- Current reportable strategy: OW_transient_proxy.",
         f"- Rows: {rows_report}",
         f"- Stocks: {stocks_report}",
         f"- Dates: {n_dates}",
@@ -737,14 +751,14 @@ def write_global_report(
         f"- max_position_over_ADV: {_fmt(sizing_report.get('max_position_over_ADV'))}",
         "- Previous unconstrained runs were unrealistic. The capped runs are the reportable ones.",
         "",
-        "## 5. OW Internal Wealth",
+        "## 5. Baseline Fitted OW_transient Proxy Strategy" if strategy_model == "OW_transient_proxy" else f"## 5. Baseline Strategy: {strategy_model}",
         f"- total_gross_pnl: {_fmt(gross)}",
-        f"- total_internal_impact_cost_normalized: {_fmt(internal_cost)}",
-        f"- total_net_pnl_internal: {_fmt(trades['net_pnl'].sum() if len(trades) else np.nan)}",
-        f"- internal_impact_cost_to_gross_pnl_ratio: {_fmt(internal_ratio)}",
+        f"- total_local_proxy_cost: {_fmt(trades['fitted_impact_cost'].sum() if len(trades) and 'fitted_impact_cost' in trades else internal_cost)}",
+        f"- total_net_pnl_local_proxy: {_fmt(trades['net_pnl'].sum() if len(trades) else np.nan)}",
+        f"- local_cost_to_gross_pnl_ratio: {_fmt((trades['fitted_impact_cost'].sum() / abs(gross)) if len(trades) and 'fitted_impact_cost' in trades and np.isfinite(gross) and gross != 0 else internal_ratio)}",
         f"- max_drawdown: {_fmt(strategy['max_drawdown'].iloc[0] if len(strategy) and 'max_drawdown' in strategy else np.nan)}",
-        "- Internal OW costs are normalized diagnostics and are not on the same economic scale as fitted-regression price-unit costs.",
-        "- Warning: internal normalized impact costs are tiny relative to gross PnL." if np.isfinite(internal_ratio) and internal_ratio < 1e-4 else "- Internal cost scale warning not triggered.",
+        "- Reportable strategy: OW_transient_proxy." if strategy_model == "OW_transient_proxy" else f"- Reportable strategy: {strategy_model}.",
+        "- Legacy theoretical OW is diagnostic only and is not used for final conclusions." if include_legacy else "- Legacy theoretical OW was not run.",
         "",
         "## 6. Fitted Regression Evaluator Wealth",
         f"- total_fitted_cost_ow_regression: {_fmt(ow_summary.get('total_fitted_cost_ow_regression'))}",
@@ -762,8 +776,9 @@ def write_global_report(
     if show_proxy:
         lines.extend([
         "## 7. Fitted-Regression Proxy Strategy",
-        "- Because teammate's fitted reduced_form model is an OLS regression, not a structural impact dynamics, it does not provide a closed-form dynamic optimal strategy.",
-        "- I therefore implement a local myopic quadratic-cost proxy using the regression marginal slope with respect to strategy order flow.",
+        "- Because teammate's fitted impact models are regressions rather than structural control models, proxy strategies are built from local marginal impact slopes.",
+        "- I therefore implement local myopic quadratic-cost proxies using each regression's marginal slope with respect to strategy order flow.",
+        "- Current reportable strategy: OW_transient_proxy.",
         "- The proxy uses orderFlow_scenario = orderFlow_market + q_strategy and estimates d(ret_bps)/dq from x_flow, x_flow_depth, and optionally x_trade.",
         "- Objective: maximize q * alpha_price - impact_slope_price_per_share * q^2 - inventory_penalty * (Q_prev + q)^2.",
         "- This is reportable as a fitted-regression-aware proxy strategy, not as the course structural AFS optimum.",
@@ -785,7 +800,39 @@ def write_global_report(
     if len(wrong_model_rows):
         lines.extend([
         "## 9. Wrong Model Stress",
-        wrong_model_rows.to_string(index=False),
+        "### 9.1 Impact Evaluator Sensitivity",
+        f"- Same {strategy_model} trade path evaluated under OW_transient and reduced_form fitted regressions.",
+        "- This is evaluator sensitivity, not full wrong-model strategy optimization.",
+        evaluator_sensitivity.to_string(index=False) if len(evaluator_sensitivity) else wrong_model_rows.to_string(index=False),
+        "",
+        ])
+        if len(wrong_proxy_summary):
+            lines.extend([
+        "### 9.2 Fitted Proxy Strategies By Assumed Model",
+        "- Fitted models are regressions, so strategy generation uses local myopic quadratic-cost proxies under each assumed model.",
+        wrong_proxy_summary.to_string(index=False),
+        "",
+            ])
+        if len(wrong_matrix):
+            lines.extend([
+        "### 9.3 True Wrong-Model Strategy Misspecification Matrix",
+        "- Rows are strategy trade paths generated under the assumed fitted model.",
+        "- Columns are fitted evaluator models treated as the true realized impact model.",
+        wrong_matrix.to_string(index=False),
+        "",
+            ])
+        if len(wrong_losses):
+            lines.extend([
+        "### 9.4 Wrong-Model Losses",
+        wrong_losses.to_string(index=False),
+        "",
+            ])
+        if len(wrong_losses):
+            rf_loss = wrong_losses.loc[wrong_losses["true_model"].astype(str).eq("reduced_form"), "wrong_model_loss"]
+            ow_loss = wrong_losses.loc[wrong_losses["true_model"].astype(str).eq("OW_transient"), "wrong_model_loss"]
+            lines.extend([
+        f"- If true model is reduced_form, using OW_transient proxy instead of reduced_form proxy changes PnL by {_fmt(rf_loss.iloc[0] if len(rf_loss) else np.nan)}.",
+        f"- If true model is OW_transient, using reduced_form proxy instead of OW_transient proxy changes PnL by {_fmt(ow_loss.iloc[0] if len(ow_loss) else np.nan)}.",
         "",
         ])
     if len(signal_delay_rows):
@@ -795,14 +842,50 @@ def write_global_report(
         "",
         ])
     if len(forced_liq_rows):
+        cols = [
+            "liquidation_trigger_mode",
+            "liquidation_mode",
+            "number_of_liquidation_events",
+            "liquidation_event_rate_realized",
+            "net_pnl_under_ow_regression_eval",
+            "net_pnl_under_reduced_form_eval",
+            "degradation_ow_eval",
+            "degradation_rf_eval",
+            "total_fitted_cost_reduced_form",
+            "total_turnover",
+            "hard_block_cap_violation_rate",
+            "number_with_residual_after_first_liquidation",
+            "number_with_overnight_residual",
+            "mean_time_to_liquidate_minutes",
+        ]
+        display_cols = [col for col in cols if col in forced_liq_rows.columns]
         lines.extend([
         "## 11. Forced Liquidation Stress: Hard Block vs Capped Residual",
+        "- Forced liquidation stress is applied to the reportable OW_transient_proxy strategy.",
         "- Hard block liquidation forces Q -> 0 immediately at the liquidation timestamp and may violate participation caps by design.",
         "- Capped residual liquidation respects liquidation participation caps. If the position cannot be fully liquidated, residual inventory remains and liquidation trades have priority over new alpha trades until cleared.",
-        "- Hard block answers the exact Section 2.7 single-block stress question; capped residual is the operationally realistic variant with inventory carry risk.",
-        forced_liq_rows.to_string(index=False),
         "",
         ])
+        deterministic = forced_liq_rows.loc[forced_liq_rows.get("liquidation_trigger_mode", pd.Series("", index=forced_liq_rows.index)).astype(str).eq("deterministic_daily")].copy()
+        if len(deterministic):
+            lines.extend([
+        "### 11.1 Deterministic daily forced liquidation",
+        "- Severe systematic stress: every eligible stock-day is forced to liquidate at 12:00.",
+        "- This answers the coursework question in a controlled way.",
+        deterministic[display_cols].to_string(index=False) if display_cols else deterministic.to_string(index=False),
+        "",
+            ])
+        probabilistic = forced_liq_rows.loc[forced_liq_rows.get("liquidation_trigger_mode", pd.Series("", index=forced_liq_rows.index)).astype(str).eq("probabilistic_daily")].copy()
+        if len(probabilistic):
+            p = probabilistic["liquidation_probability"].dropna().iloc[0] if "liquidation_probability" in probabilistic and probabilistic["liquidation_probability"].notna().any() else 0.10
+            seed = probabilistic["liquidation_random_seed"].dropna().iloc[0] if "liquidation_random_seed" in probabilistic and probabilistic["liquidation_random_seed"].notna().any() else 42
+            lines.extend([
+        "### 11.2 Probabilistic daily forced liquidation",
+        f"- Operational-risk stress: each stock-day independently has probability p={p:g} of forced liquidation at 12:00.",
+        f"- Random seed is fixed at {int(seed)} for reproducibility.",
+        probabilistic[display_cols].to_string(index=False) if display_cols else probabilistic.to_string(index=False),
+        "",
+            ])
     if len(sensitivity):
         lines.extend([
         "## 12. Sizing Sensitivity",

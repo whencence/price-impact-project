@@ -24,6 +24,7 @@ from src.fitted_regression_params import get_params_for_pair_stock
 class FittedRegressionProxyConfig:
     """Configuration for the fitted-regression local myopic proxy strategy."""
 
+    model_name: str = "reduced_form"
     alpha_col: str = "alpha_for_strategy"
     add_strategy_to_trade_feature: bool = False
     inventory_penalty: float = 1e-8
@@ -36,6 +37,8 @@ class FittedRegressionProxyConfig:
     def __post_init__(self) -> None:
         """Validate fitted proxy settings."""
 
+        if self.model_name not in {"OW_transient", "reduced_form"}:
+            raise ValueError("model_name must be 'OW_transient' or 'reduced_form'")
         if self.inventory_penalty < 0:
             raise ValueError("inventory_penalty must be non-negative")
         if self.min_impact_slope_price_per_share <= 0:
@@ -85,7 +88,7 @@ def build_proxy_strategy_frame(
     train_raw_df: pd.DataFrame,
     test_raw_df: pd.DataFrame,
     alpha_df: pd.DataFrame,
-    reduced_form_params_df: pd.DataFrame,
+    params_df: pd.DataFrame,
     pair_id: int,
     config: FittedRegressionProxyConfig,
 ) -> pd.DataFrame:
@@ -106,10 +109,10 @@ def build_proxy_strategy_frame(
     slopes = np.full(len(frame), np.nan)
     for stock, idx in frame.groupby("stock", sort=False, observed=True).groups.items():
         params = get_params_for_pair_stock(
-            reduced_form_params_df,
+            params_df,
             pair_id,
             str(stock),
-            "reduced_form",
+            config.model_name,
             allow_missing=True,
         )
         loc = list(idx)
@@ -119,10 +122,18 @@ def build_proxy_strategy_frame(
         flow_scale = pd.to_numeric(frame.loc[loc, "flow_scale"], errors="coerce").replace(0, np.nan)
         depth = pd.to_numeric(frame.loc[loc, "depth"], errors="coerce").replace(0, np.nan)
         slope = float(coef.get("x_flow", 0.0)) / flow_scale
-        if "x_flow_depth" in coef:
-            slope = slope + float(coef.get("x_flow_depth", 0.0)) / depth
-        if config.add_strategy_to_trade_feature and "x_trade" in coef:
-            slope = slope + float(coef.get("x_trade", 0.0)) / flow_scale
+        if config.model_name == "OW_transient":
+            # Teammate's OW_transient regression includes ow_state_pre, but
+            # ow_state_pre is a pre-trade state. The current q_t affects future
+            # state, not the current pre-state. This local myopic proxy uses
+            # only the current-bin x_flow marginal slope; a dynamic proxy could
+            # add future state effects later.
+            pass
+        else:
+            if "x_flow_depth" in coef:
+                slope = slope + float(coef.get("x_flow_depth", 0.0)) / depth
+            if config.add_strategy_to_trade_feature and "x_trade" in coef:
+                slope = slope + float(coef.get("x_trade", 0.0)) / flow_scale
         slopes[loc] = pd.to_numeric(slope, errors="coerce")
 
     frame["impact_slope_bps_per_share_raw"] = slopes
@@ -133,6 +144,7 @@ def build_proxy_strategy_frame(
         frame["impact_slope_bps_per_share"] > 0,
         config.min_impact_slope_price_per_share * 10000.0 / frame["mid"].clip(lower=1e-12),
     )
+    frame["slope_floored"] = frame["impact_slope_bps_per_share_raw"] <= 0
     frame["impact_slope_price_per_share"] = (
         frame["mid"] * frame["impact_slope_bps_per_share"] / 10000.0
     ).clip(lower=config.min_impact_slope_price_per_share)
@@ -140,6 +152,8 @@ def build_proxy_strategy_frame(
     frame["alpha"] = frame[config.alpha_col]
     frame["alpha_price"] = frame["mid"] * frame["alpha"]
     frame["pair_id"] = pair_id
+    frame["assumed_model"] = config.model_name
+    frame["strategy_model"] = f"{config.model_name}_proxy"
     return frame.sort_values(["stock", "trading_date", "datetime"]).reset_index(drop=True)
 
 
@@ -147,14 +161,14 @@ def run_fitted_regression_proxy_strategy(
     train_raw_df: pd.DataFrame,
     test_raw_df: pd.DataFrame,
     alpha_df: pd.DataFrame,
-    reduced_form_params_df: pd.DataFrame,
+    params_df: pd.DataFrame,
     pair_id: int,
     config: FittedRegressionProxyConfig | None = None,
 ) -> pd.DataFrame:
     """Run the local myopic quadratic-cost fitted-regression proxy strategy."""
 
     cfg = config or FittedRegressionProxyConfig()
-    frame = build_proxy_strategy_frame(train_raw_df, test_raw_df, alpha_df, reduced_form_params_df, pair_id, cfg)
+    frame = build_proxy_strategy_frame(train_raw_df, test_raw_df, alpha_df, params_df, pair_id, cfg)
     rows = []
     for _, group in frame.groupby(["stock", "trading_date"], sort=False, observed=True):
         position_prev = 0.0
@@ -213,9 +227,22 @@ def run_fitted_regression_proxy_strategy(
             position_prev = position_after
             prev_mid = mid
     out = pd.DataFrame(rows).sort_values(["stock", "trading_date", "datetime"]).reset_index(drop=True)
+    out["date"] = out["trading_date"].astype(str)
+    out["timestamp"] = out["datetime"]
+    out["trade"] = out["signed_volume"]
     out["cumulative_wealth"] = out["net_pnl"].cumsum()
+    out["cumulative_gross_pnl"] = out["gross_pnl"].cumsum()
     out["turnover"] = out["signed_volume"].abs()
     out["notional_turnover"] = out["turnover"] * out["mid"]
+    out["signed_volume_notional"] = out["signed_volume"] * out["mid"]
+    out["signed_impact_cost_normalized"] = 0.0
+    out["quadratic_impact_cost_normalized"] = out["fitted_impact_cost"]
+    out["normalized_trade"] = out["signed_volume"] / out["ADV"].replace(0, np.nan)
+    out["impact_after_trade"] = out["impact_slope_price_per_share"] * out["signed_volume"]
+    out["has_scaling"] = out["ADV"].notna() & (out["ADV"] > 0)
+    out["skipped_due_to_missing_scaling"] = False
+    out["assumed_model"] = cfg.model_name
+    out["strategy_model"] = f"{cfg.model_name}_proxy"
     return out
 
 
@@ -310,9 +337,9 @@ def save_fitted_proxy_plots(proxy_trades: pd.DataFrame, ow_trades: pd.DataFrame,
     fig, ax = plt.subplots(figsize=(10, 5))
     if {"timestamp", "net_pnl"}.issubset(ow_trades.columns):
         ow_port = _portfolio_timeseries(ow_trades, "timestamp", ["net_pnl"])
-        ax.plot(ow_port["timestamp"], ow_port["cumulative_net_pnl"], label="OW target-impact")
-    ax.plot(proxy_port["datetime"], proxy_port["cumulative_net_pnl"], label="fitted proxy")
-    ax.set_title("OW vs Fitted Proxy Wealth")
+        ax.plot(ow_port["timestamp"], ow_port["cumulative_net_pnl"], label="reportable strategy")
+    ax.plot(proxy_port["datetime"], proxy_port["cumulative_net_pnl"], label="comparison proxy strategy")
+    ax.set_title("Reportable strategy vs proxy strategy wealth")
     ax.legend()
     fig.autofmt_xdate()
     fig.tight_layout()

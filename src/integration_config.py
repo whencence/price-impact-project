@@ -41,6 +41,9 @@ class IntegratedRunConfig:
     run_stress_tests: bool = True
     signal_delay_minutes: float = 1.0
     forced_liquidation_time: str = "12:00:00"
+    liquidation_trigger_mode: str = "deterministic_daily"
+    liquidation_probability: float = 0.10
+    liquidation_random_seed: int = 42
     liquidation_mode: str = "both"
     resume_alpha_after_liquidation: bool = False
     liquidation_priority_over_alpha: bool = True
@@ -48,6 +51,7 @@ class IntegratedRunConfig:
     mark_residual_inventory_to_market: bool = True
     carry_residual_overnight: bool = True
     max_liquidation_participation_rate: float | None = None
+    wrong_model_mode: str = "both"
     orderflow_scenario_convention: str = "market_plus_strategy"
 
     max_pairs: int | None = None
@@ -55,6 +59,8 @@ class IntegratedRunConfig:
     save_pair_level_trades: bool = True
     allow_missing_params: bool = False
     use_x_flow_lambda_proxy: bool = False
+    strategy_model: str = "OW_transient_proxy"
+    include_legacy_theoretical_ow: bool = False
     skip_stress: bool = False
     skip_sensitivity: bool = False
     max_participation_rate_per_trade: float | None = 0.01
@@ -72,6 +78,14 @@ class IntegratedRunConfig:
             raise ValueError("only orderflow_scenario_convention='market_plus_strategy' is implemented")
         if self.liquidation_mode not in {"hard_block", "capped_with_residual", "both"}:
             raise ValueError("liquidation_mode must be 'hard_block', 'capped_with_residual', or 'both'")
+        if self.liquidation_trigger_mode not in {"deterministic_daily", "probabilistic_daily", "both"}:
+            raise ValueError("liquidation_trigger_mode must be deterministic_daily, probabilistic_daily, or both")
+        if not 0 <= self.liquidation_probability <= 1:
+            raise ValueError("liquidation_probability must be in [0, 1]")
+        if self.wrong_model_mode not in {"evaluator_sensitivity", "strategy_misspecification", "both"}:
+            raise ValueError("wrong_model_mode must be 'evaluator_sensitivity', 'strategy_misspecification', or 'both'")
+        if self.strategy_model not in {"OW_transient_proxy", "reduced_form_proxy", "theoretical_OW_legacy"}:
+            raise ValueError("strategy_model must be OW_transient_proxy, reduced_form_proxy, or theoretical_OW_legacy")
         if self.max_liquidation_participation_rate is not None and self.max_liquidation_participation_rate <= 0:
             raise ValueError("max_liquidation_participation_rate must be None or positive")
         for value in [self.alpha_horizon_minutes, self.alpha_decay_half_life_minutes]:

@@ -386,19 +386,38 @@ In the integrated rolling framework this is implemented in two versions:
   over new alpha trades until the residual is cleared. Residual inventory can be
   carried and is marked to market.
 
-Run both integrated variants with:
+The trigger can be deterministic or probabilistic:
+
+- `deterministic_daily`: severe systematic stress. Every eligible stock-day is
+  forced to liquidate at noon.
+- `probabilistic_daily`: operational-risk stress. Each stock-day independently
+  has probability `p` of forced liquidation at noon. The default is `p=10%`, with
+  a fixed random seed for reproducibility.
+
+Both trigger modes support both liquidation variants. The final reportable
+strategy remains `OW_transient_proxy`.
+
+Run all integrated forced-liquidation variants with:
 
 ```bash
-python -m src.run_integrated_rolling_simulations --mode single_pair --pair-id 1 --liquidation-mode both
+python -m src.run_integrated_rolling_simulations \
+  --mode single_pair \
+  --pair-id 1 \
+  --scenario forced_liquidation \
+  --strategy-model OW_transient_proxy \
+  --liquidation-trigger-mode both \
+  --liquidation-probability 0.10 \
+  --liquidation-random-seed 42 \
+  --liquidation-mode both
 ```
 
 Integrated outputs include:
 
-- `outputs/rolling_runs/pair_{pair_id}/stress/forced_liq_hard_block_trades.csv`
-- `outputs/rolling_runs/pair_{pair_id}/stress/forced_liq_capped_residual_trades.csv`
-- `outputs/rolling_runs/pair_{pair_id}/stress/forced_liq_hard_block_events.csv`
-- `outputs/rolling_runs/pair_{pair_id}/stress/forced_liq_capped_residual_events.csv`
-- fitted evaluator files for both liquidation paths.
+- `pair_{pair_id}/stress/forced_liq_deterministic_daily_hard_block_events.csv`
+- `pair_{pair_id}/stress/forced_liq_deterministic_daily_capped_residual_events.csv`
+- `pair_{pair_id}/stress/forced_liq_probabilistic_daily_p010_seed42_hard_block_events.csv`
+- `pair_{pair_id}/stress/forced_liq_probabilistic_daily_p010_seed42_capped_residual_events.csv`
+- matching trade and fitted-evaluator files for each trigger/mode combination.
 
 3. Wrong impact parameters:
 
@@ -705,6 +724,7 @@ python -m src.run_integrated_rolling_simulations \
   --mode single_pair \
   --pair-id 1 \
   --scenario wrong_model \
+  --wrong-model-mode both \
   --save-trades \
   --experiment-name full_pair1_wrong_model
 
@@ -771,3 +791,93 @@ python -m src.run_integrated_rolling_simulations \
 
 If `--save-trades` is omitted, strict OW row-level trade-file checks are marked
 `SKIP`; evaluator-based sizing and cost diagnostics still run where possible.
+
+### Final Reportable Strategy
+
+The final/reportable trading strategy is now `OW_transient_proxy` by default.
+This replaces the old course-style theoretical OW target-impact strategy in
+all final baseline and stress-test tables.
+
+Reason: teammate's fitted "OW" model is an OW-style regression,
+
+```text
+retBps_t = intercept + b_flow x_flow_t + b_state ow_state_pre_t + eps
+```
+
+not the structural course model `dI = -beta I dt + lambda dQ`. The old
+theoretical OW strategy remains available only as a diagnostic legacy path:
+
+```bash
+python -m src.run_integrated_rolling_simulations \
+  --mode single_pair \
+  --pair-id 1 \
+  --scenario baseline \
+  --strategy-model theoretical_OW_legacy \
+  --include-legacy-theoretical-ow
+```
+
+Default runs use:
+
+```bash
+--strategy-model OW_transient_proxy
+```
+
+All stress tests now apply to `OW_transient_proxy` unless another strategy is
+explicitly selected. Reports include `Reportable strategy model:
+OW_transient_proxy` in the executive summary.
+
+The old `wrong_model` output was a same-trade evaluator sensitivity:
+
+```text
+same reportable OW_transient_proxy trade path
+  -> evaluated under OW_transient regression
+  -> evaluated under reduced_form regression
+```
+
+That is still useful, but it is now labelled
+`impact_evaluator_sensitivity`. The corrected wrong-impact-model stress also
+generates fitted-regression proxy strategies under each assumed fitted model:
+
+```text
+OW_transient_proxy      generated from OW_transient local marginal slope
+reduced_form_proxy      generated from reduced_form local marginal slope
+```
+
+Because teammate models are regressions rather than structural control models,
+both are local myopic quadratic-cost proxies. The wrong-model scenario then
+evaluates the 2x2 matrix:
+
+```text
+strategy assumed model x true/evaluator model
+
+OW_transient_proxy  under OW_transient
+OW_transient_proxy  under reduced_form
+reduced_form_proxy  under OW_transient
+reduced_form_proxy  under reduced_form
+```
+
+The key losses are:
+
+```text
+loss if RF is true = PnL(OW_transient_proxy under RF)
+                   - PnL(reduced_form_proxy under RF)
+
+loss if OW is true = PnL(reduced_form_proxy under OW)
+                   - PnL(OW_transient_proxy under OW)
+```
+
+Run both the old evaluator sensitivity and corrected strategy
+misspecification test with:
+
+```bash
+python -m src.run_integrated_rolling_simulations \
+  --mode single_pair \
+  --pair-id 1 \
+  --scenario wrong_model \
+  --wrong-model-mode both \
+  --experiment-name full_pair1_wrong_model_corrected
+```
+
+Outputs include `impact_evaluator_sensitivity.csv`,
+`wrong_model_matrix.csv`, `wrong_model_losses.csv`, and wrong-model matrix
+figures under the pair-level `figures/` folder.

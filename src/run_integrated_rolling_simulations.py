@@ -72,6 +72,8 @@ def parse_args() -> ArgumentParser:
     parser.add_argument("--save-trades", action="store_true")
     parser.add_argument("--use-baseline-20stocks", action="store_true")
     parser.add_argument("--use-x-flow-lambda-proxy", action="store_true")
+    parser.add_argument("--strategy-model", choices=["OW_transient_proxy", "reduced_form_proxy", "theoretical_OW_legacy"], default="OW_transient_proxy")
+    parser.add_argument("--include-legacy-theoretical-ow", action="store_true")
     parser.add_argument("--skip-stress", action="store_true")
     parser.add_argument("--skip-sensitivity", action="store_true")
     parser.add_argument("--scenario", choices=["baseline", "signal_delay", "wrong_model", "forced_liquidation", "sizing_sensitivity", "all"], default="baseline")
@@ -88,6 +90,10 @@ def parse_args() -> ArgumentParser:
     parser.add_argument("--clean-output-figures", action=BooleanOptionalAction, default=True)
     parser.add_argument("--run-strategy-audit", action="store_true")
     parser.add_argument("--liquidation-mode", choices=["hard_block", "capped_with_residual", "both"], default="both")
+    parser.add_argument("--liquidation-trigger-mode", choices=["deterministic_daily", "probabilistic_daily", "both"], default="deterministic_daily")
+    parser.add_argument("--liquidation-probability", type=float, default=0.10)
+    parser.add_argument("--liquidation-random-seed", type=int, default=42)
+    parser.add_argument("--wrong-model-mode", choices=["evaluator_sensitivity", "strategy_misspecification", "both"], default="both")
     parser.add_argument("--max-liquidation-participation-rate", type=float, default=None)
     parser.add_argument("--carry-residual-overnight", action=BooleanOptionalAction, default=True)
     parser.add_argument("--liquidation-priority-over-alpha", action=BooleanOptionalAction, default=True)
@@ -132,11 +138,59 @@ def _pair_summary(pair_id: int, trades: pd.DataFrame) -> dict:
     unique_dates = int(trades["date"].nunique()) if "date" in trades.columns else None
     return {
         "pair_id": pair_id,
+        "strategy_model": trades["strategy_model"].iloc[0] if "strategy_model" in trades.columns and len(trades) else "unknown",
         "n_rows": len(trades),
         "n_stocks": trades["stock"].nunique(),
         "number_of_unique_dates": unique_dates,
         **summary,
     }
+
+
+def _proxy_model_from_strategy_name(strategy_model: str) -> str:
+    if strategy_model == "OW_transient_proxy":
+        return "OW_transient"
+    if strategy_model == "reduced_form_proxy":
+        return "reduced_form"
+    raise ValueError(f"{strategy_model} is not a fitted proxy strategy")
+
+
+def _scaled_alpha(alpha: pd.DataFrame, run_config: IntegratedRunConfig) -> pd.DataFrame:
+    out = alpha.copy()
+    scale = float(run_config.alpha_scale) * float(run_config.target_impact_scale)
+    if scale != 1.0 and "alpha_for_strategy" in out.columns:
+        out["alpha_for_strategy"] = pd.to_numeric(out["alpha_for_strategy"], errors="coerce").fillna(0.0) * scale
+    return out
+
+
+def run_reportable_strategy_on_pair(
+    pair_row: pd.Series,
+    train_raw: pd.DataFrame,
+    test_raw: pd.DataFrame,
+    alpha: pd.DataFrame,
+    ow_params: pd.DataFrame,
+    rf_params: pd.DataFrame,
+    run_config: IntegratedRunConfig,
+) -> pd.DataFrame:
+    """Run the selected reportable strategy for an integrated pair."""
+
+    if run_config.strategy_model == "theoretical_OW_legacy":
+        stocks = sorted(test_raw["stock"].astype(str).unique())
+        return run_my_ow_strategy_on_pair(pair_row, train_raw, test_raw, stocks, alpha, ow_params, run_config)
+    model_name = _proxy_model_from_strategy_name(run_config.strategy_model)
+    params = ow_params if model_name == "OW_transient" else rf_params
+    cfg = FittedRegressionProxyConfig(
+        model_name=model_name,
+        max_participation_rate_per_trade=run_config.max_participation_rate_per_trade,
+        max_abs_trade_adv_fraction=run_config.max_abs_trade_adv_fraction,
+        max_abs_position_adv_fraction=run_config.max_abs_position_adv_fraction,
+    )
+    trades = run_fitted_regression_proxy_strategy(train_raw, test_raw, _scaled_alpha(alpha, run_config), params, int(pair_row["pair_id"]), cfg)
+    trades["pair_id"] = int(pair_row["pair_id"])
+    trades["train_month"] = str(pair_row["train_month"])
+    trades["test_month"] = str(pair_row["test_month"])
+    trades["strategy_model"] = run_config.strategy_model
+    trades["reportable_strategy"] = True
+    return trades
 
 
 def _run_sizing_sensitivity_for_pair(
@@ -164,8 +218,16 @@ def _run_sizing_sensitivity_for_pair(
                     run_config.max_abs_trade_adv_fraction or participation_cap,
                 ),
             )
-            trades = run_my_ow_strategy_on_pair(pair_row, train_raw, test_raw, stocks, alpha, ow_params, cfg)
+            trades = run_reportable_strategy_on_pair(pair_row, train_raw, test_raw, alpha, ow_params, rf_params, cfg)
             summary = _pair_summary(int(pair_row["pair_id"]), trades)
+            ow_eval = evaluate_marginal_impact_from_strategy_trades(
+                train_raw,
+                test_raw,
+                trades,
+                ow_params,
+                int(pair_row["pair_id"]),
+                model_name="OW_transient",
+            )
             rf_eval = evaluate_marginal_impact_from_strategy_trades(
                 train_raw,
                 test_raw,
@@ -177,7 +239,9 @@ def _run_sizing_sensitivity_for_pair(
             rows.append(
                 {
                     "pair_id": int(pair_row["pair_id"]),
+                    "strategy_model": cfg.strategy_model,
                     "target_impact_scale": target_scale,
+                    "proxy_trade_scale": target_scale,
                     "max_participation_rate": participation_cap,
                     "total_net_pnl": summary.get("total_net_pnl"),
                     "total_turnover": summary.get("total_signed_volume_turnover"),
@@ -186,12 +250,15 @@ def _run_sizing_sensitivity_for_pair(
                     "max_abs_position": summary.get("max_abs_position"),
                     "share_trade_clipped": float(trades.get("trade_clipped", pd.Series(False)).mean()),
                     "share_position_clipped": float(trades.get("position_clipped", pd.Series(False)).mean()),
+                    "total_fitted_cost_ow_regression": float(ow_eval["fitted_impact_cost_signed"].sum()),
+                    "net_pnl_under_ow_regression_eval": float(ow_eval["net_pnl_fitted_model"].sum()),
                     "total_fitted_cost_reduced_form": float(rf_eval["fitted_impact_cost_signed"].sum()),
                     "net_pnl_under_reduced_form_eval": float(rf_eval["net_pnl_fitted_model"].sum()),
                 }
             )
     out = pd.DataFrame(rows)
     out.to_csv(pair_dir / "sizing_sensitivity_summary.csv", index=False)
+    out.to_csv(pair_dir / f"sizing_sensitivity_{run_config.strategy_model}_summary.csv", index=False)
     return out
 
 
@@ -228,6 +295,8 @@ def main() -> None:
         save_pair_level_trades=args.save_trades,
         use_baseline_20stocks=args.use_baseline_20stocks,
         use_x_flow_lambda_proxy=args.use_x_flow_lambda_proxy,
+        strategy_model=args.strategy_model,
+        include_legacy_theoretical_ow=args.include_legacy_theoretical_ow,
         skip_stress=args.skip_stress,
         skip_sensitivity=args.skip_sensitivity,
         max_rows_per_pair=args.max_rows_per_pair,
@@ -237,6 +306,10 @@ def main() -> None:
         target_impact_scale=args.target_impact_scale,
         alpha_scale=args.alpha_scale,
         liquidation_mode=args.liquidation_mode,
+        liquidation_trigger_mode=args.liquidation_trigger_mode,
+        liquidation_probability=args.liquidation_probability,
+        liquidation_random_seed=args.liquidation_random_seed,
+        wrong_model_mode=args.wrong_model_mode,
         max_liquidation_participation_rate=args.max_liquidation_participation_rate,
         carry_residual_overnight=args.carry_residual_overnight,
         liquidation_priority_over_alpha=args.liquidation_priority_over_alpha,
@@ -332,12 +405,29 @@ def main() -> None:
             alpha_decay_half_life_minutes=run_config.alpha_decay_half_life_minutes,
             output_dir=alpha_dir,
         )
-        trades = run_my_ow_strategy_on_pair(pair_row, train_raw, test_raw, stocks, alpha, ow_params, run_config)
+        trades = run_reportable_strategy_on_pair(pair_row, train_raw, test_raw, alpha, ow_params, rf_params, run_config)
         if run_config.save_pair_level_trades:
-            trades.to_csv(pair_dir / "my_ow_trades.csv", index=False)
-            trades.to_csv(pair_dir / "trades" / "baseline_ow_trades.csv", index=False)
+            trades.to_csv(pair_dir / f"baseline_{run_config.strategy_model}_trades.csv", index=False)
+            trades.to_csv(pair_dir / "trades" / f"baseline_{run_config.strategy_model}_trades.csv", index=False)
+        trades.to_csv(pair_dir / f"{run_config.strategy_model}_trades_latest.csv", index=False)
         strategy_summary = _pair_summary(pair_id, trades)
         strategy_rows.append(strategy_summary)
+        detailed_validation_rows.append(
+            {
+                "check": "reportable_strategy_is_proxy",
+                "status": "PASS" if run_config.strategy_model == "OW_transient_proxy" else ("SKIP" if run_config.include_legacy_theoretical_ow else "WARN"),
+                "message": f"strategy_model={run_config.strategy_model}",
+                "pair_id": pair_id,
+            }
+        )
+        detailed_validation_rows.append(
+            {
+                "check": "baseline_uses_OW_transient_proxy",
+                "status": "PASS" if run_config.strategy_model == "OW_transient_proxy" else ("SKIP" if run_config.include_legacy_theoretical_ow else "WARN"),
+                "message": f"reportable strategy_model={run_config.strategy_model}",
+                "pair_id": pair_id,
+            }
+        )
 
         ow_eval = evaluate_marginal_impact_from_strategy_trades(
             train_raw, test_raw, trades, ow_params, pair_id, model_name="OW_transient"
@@ -353,37 +443,33 @@ def main() -> None:
         baseline_eval_rows.append(
             {
                 "pair_id": pair_id,
+                "strategy_model": run_config.strategy_model,
                 **summarize_regression_evaluator(ow_eval, "ow_regression"),
                 **summarize_regression_evaluator(rf_eval, "reduced_form"),
             }
         )
         if run_baseline_outputs:
-            proxy_config = FittedRegressionProxyConfig(
-                max_participation_rate_per_trade=run_config.max_participation_rate_per_trade,
-                max_abs_trade_adv_fraction=run_config.max_abs_trade_adv_fraction,
-                max_abs_position_adv_fraction=run_config.max_abs_position_adv_fraction,
-            )
-            proxy_trades = run_fitted_regression_proxy_strategy(
-                train_raw,
-                test_raw,
-                alpha,
-                rf_params,
-                pair_id,
-                proxy_config,
-            )
-            proxy_trades.to_csv(pair_dir / "fitted_proxy_strategy_trades.csv", index=False)
+            if run_config.strategy_model != "theoretical_OW_legacy":
+                proxy_summary = {
+                    "pair_id": pair_id,
+                    "strategy_model": run_config.strategy_model,
+                    **compute_fitted_proxy_summary(trades),
+                }
+                fitted_proxy_rows.append(proxy_summary)
+                trades.to_csv(pair_dir / "fitted_proxy_strategy_trades.csv", index=False)
+                if run_config.save_pair_level_trades:
+                    trades.to_csv(pair_dir / "trades" / f"fitted_proxy_strategy_{_proxy_model_from_strategy_name(run_config.strategy_model)}.csv", index=False)
+                save_fitted_proxy_plots(trades, trades, pair_dir)
+                proxy_config = FittedRegressionProxyConfig(model_name=_proxy_model_from_strategy_name(run_config.strategy_model))
+                for check in validate_fitted_proxy_strategy(trades, proxy_config):
+                    check["pair_id"] = pair_id
+                    detailed_validation_rows.append(check)
+        if run_config.include_legacy_theoretical_ow and run_config.strategy_model != "theoretical_OW_legacy":
+            legacy = run_my_ow_strategy_on_pair(pair_row, train_raw, test_raw, stocks, alpha, ow_params, run_config)
+            legacy["strategy_model"] = "theoretical_OW_legacy"
+            legacy.to_csv(pair_dir / "legacy_theoretical_OW_trades.csv", index=False)
             if run_config.save_pair_level_trades:
-                proxy_trades.to_csv(pair_dir / "trades" / "fitted_proxy_strategy_trades.csv", index=False)
-            proxy_summary = {
-                "pair_id": pair_id,
-                "strategy_model": "fitted_regression_myopic_proxy",
-                **compute_fitted_proxy_summary(proxy_trades),
-            }
-            fitted_proxy_rows.append(proxy_summary)
-            save_fitted_proxy_plots(proxy_trades, trades, pair_dir)
-            for check in validate_fitted_proxy_strategy(proxy_trades, proxy_config):
-                check["pair_id"] = pair_id
-                detailed_validation_rows.append(check)
+                legacy.to_csv(pair_dir / "trades" / "legacy_theoretical_OW_trades.csv", index=False)
         for check in validate_strategy_pnl_timing(trades):
             check["pair_id"] = pair_id
             detailed_validation_rows.append(check)
@@ -414,6 +500,7 @@ def main() -> None:
                     pair_dir,
                 )
                 sensitivity_rows.extend(sizing_df.to_dict("records"))
+                detailed_validation_rows.append({"check": "sizing_uses_OW_transient_proxy", "status": "PASS" if run_config.strategy_model == "OW_transient_proxy" else "WARN", "message": f"strategy_model={run_config.strategy_model}", "pair_id": pair_id})
             except Exception as exc:  # noqa: BLE001
                 skipped_rows.append({"pair_id": pair_id, "scenario_name": "sizing_sensitivity", "reason": str(exc)})
                 print(f"WARNING: pair {pair_id} sizing sensitivity skipped: {exc}")
@@ -423,10 +510,16 @@ def main() -> None:
                 wrong_eval, wrong_summary = run_wrong_model_stress_pair(
                     pair_row, train_raw, test_raw, trades, ow_params, rf_params, run_config, stress_dir
                 )
-                wrong_summary["scenario_name"] = "wrong_model_OW_transient_vs_reduced_form"
-                wrong_summary["scenario_type"] = "wrong_impact_model_regression_evaluator"
                 wrong_rows.append(wrong_summary)
                 stress_rows.append(wrong_summary)
+                wrong_summary_path = stress_dir / "wrong_model_summary.csv"
+                if wrong_summary_path.exists():
+                    stress_rows.extend(pd.read_csv(wrong_summary_path).to_dict("records"))
+                wrong_checks_path = stress_dir / "wrong_model_validation_checks.csv"
+                if wrong_checks_path.exists():
+                    for check in pd.read_csv(wrong_checks_path).to_dict("records"):
+                        check["pair_id"] = pair_id
+                        detailed_validation_rows.append(check)
             except Exception as exc:  # noqa: BLE001 - scenario failures should be reported and skipped.
                 skipped_rows.append({"pair_id": pair_id, "scenario_name": "wrong_model", "reason": str(exc)})
                 print(f"WARNING: pair {pair_id} wrong-model stress skipped: {exc}")
@@ -440,15 +533,47 @@ def main() -> None:
                     stocks,
                     alpha,
                     ow_params,
+                    rf_params,
                     run_config,
                     stress_dir,
                 )
                 signal_rf_eval = evaluate_marginal_impact_from_strategy_trades(
                     train_raw, test_raw, signal_trades, rf_params, pair_id, model_name="reduced_form"
                 )
+                signal_ow_eval = evaluate_marginal_impact_from_strategy_trades(
+                    train_raw, test_raw, signal_trades, ow_params, pair_id, model_name="OW_transient"
+                )
+                signal_eval = signal_ow_eval.merge(
+                    signal_rf_eval[["stock", "trading_date", "datetime", "net_pnl_fitted_model", "fitted_impact_cost_signed"]],
+                    on=["stock", "trading_date", "datetime"],
+                    how="left",
+                    suffixes=("_ow", "_rf"),
+                )
+                signal_eval.to_csv(stress_dir / f"signal_delay_{run_config.strategy_model}_evaluator.csv", index=False)
                 signal_rf_eval.to_csv(stress_dir / "signal_delay_fitted_evaluator.csv", index=False)
                 signal_summary.update(summarize_regression_evaluator(signal_rf_eval, "reduced_form"))
+                signal_summary.update(summarize_regression_evaluator(signal_ow_eval, "ow_regression"))
+                comparison = pd.DataFrame(
+                    [
+                        {
+                            "pair_id": pair_id,
+                            "strategy_model": run_config.strategy_model,
+                            "baseline_OW_proxy_net_pnl_under_OW_eval": float(ow_eval["net_pnl_fitted_model"].sum()),
+                            "delayed_OW_proxy_net_pnl_under_OW_eval": float(signal_ow_eval["net_pnl_fitted_model"].sum()),
+                            "delta_OW_eval": float(signal_ow_eval["net_pnl_fitted_model"].sum() - ow_eval["net_pnl_fitted_model"].sum()),
+                            "baseline_OW_proxy_net_pnl_under_RF_eval": float(rf_eval["net_pnl_fitted_model"].sum()),
+                            "delayed_OW_proxy_net_pnl_under_RF_eval": float(signal_rf_eval["net_pnl_fitted_model"].sum()),
+                            "delta_RF_eval": float(signal_rf_eval["net_pnl_fitted_model"].sum() - rf_eval["net_pnl_fitted_model"].sum()),
+                            "turnover_baseline": float(trades["signed_volume"].abs().sum()),
+                            "turnover_delayed": float(signal_trades["signed_volume"].abs().sum()),
+                            "cost_baseline": float(ow_eval["fitted_impact_cost_signed"].sum()),
+                            "cost_delayed": float(signal_ow_eval["fitted_impact_cost_signed"].sum()),
+                        }
+                    ]
+                )
+                comparison.to_csv(stress_dir / "signal_delay_comparison.csv", index=False)
                 stress_rows.append(signal_summary)
+                detailed_validation_rows.append({"check": "signal_delay_uses_OW_transient_proxy", "status": "PASS" if run_config.strategy_model == "OW_transient_proxy" else "WARN", "message": f"strategy_model={run_config.strategy_model}", "pair_id": pair_id})
             except Exception as exc:  # noqa: BLE001
                 skipped_rows.append({"pair_id": pair_id, "scenario_name": "signal_delay", "reason": str(exc)})
                 print(f"WARNING: pair {pair_id} signal-delay stress skipped: {exc}")
@@ -470,6 +595,10 @@ def main() -> None:
                     stress_rows.extend(pd.read_csv(forced_summary_path).to_dict("records"))
                 else:
                     stress_rows.append(forced_summary)
+                forced_checks_path = stress_dir / "forced_liq_validation_checks.csv"
+                if forced_checks_path.exists():
+                    detailed_validation_rows.extend(pd.read_csv(forced_checks_path).to_dict("records"))
+                detailed_validation_rows.append({"check": "forced_liq_uses_OW_transient_proxy", "status": "PASS" if run_config.strategy_model == "OW_transient_proxy" else "WARN", "message": f"strategy_model={run_config.strategy_model}", "pair_id": pair_id})
             except Exception as exc:  # noqa: BLE001
                 skipped_rows.append({"pair_id": pair_id, "scenario_name": "forced_liquidation", "reason": str(exc)})
                 print(f"WARNING: pair {pair_id} forced-liquidation stress skipped: {exc}")
@@ -479,6 +608,8 @@ def main() -> None:
         if debug_path is not None:
             debug_paths.append(debug_path)
         archive_figure_dir(pair_dir / "figures", run_archive_dir / f"pair_{pair_id}" / "figures")
+        legacy_exists = (pair_dir / "legacy_theoretical_OW_trades.csv").exists() or (pair_dir / "my_ow_trades.csv").exists()
+        detailed_validation_rows.append({"check": "no_legacy_ow_in_final_outputs", "status": "PASS" if run_config.include_legacy_theoretical_ow or not legacy_exists else "FAIL", "message": f"legacy_outputs_present={legacy_exists}", "pair_id": pair_id})
         write_pair_report(
             pair_dir,
             pair_id,
@@ -495,10 +626,16 @@ def main() -> None:
         "pair_id",
         "scenario_name",
         "scenario_type",
+        "rf_true_correct_model_pnl",
+        "rf_true_wrong_model_pnl",
+        "wrong_model_loss_rf_true",
+        "ow_true_correct_model_pnl",
+        "ow_true_wrong_model_pnl",
+        "wrong_model_loss_ow_true",
         "total_fitted_cost_ow_regression",
         "total_fitted_cost_reduced_form",
         "total_cost_difference_rf_minus_ow",
-        "degradation_rf_vs_ow",
+        "net_pnl_difference_rf_minus_ow",
     ]
     stress_columns = [
         "pair_id",
@@ -627,7 +764,10 @@ def main() -> None:
             _write_simple_markdown_report(
                 pair_dir / "reports" / "wrong_model_report.md",
                 "Wrong Model Report",
-                ["Fixed OW trades are evaluated under OW_transient and reduced_form teammate regressions."],
+                [
+                    "Impact evaluator sensitivity uses the same theoretical OW trade path under multiple fitted evaluators.",
+                    "Strategy misspecification uses fitted proxy trades generated under OW_transient and reduced_form assumptions, then evaluates each under both fitted models.",
+                ],
             )
         if (pair_dir / "sizing_sensitivity_summary.csv").exists():
             _write_simple_markdown_report(
@@ -741,10 +881,13 @@ def main() -> None:
         print("Forced liquidation stress summary:")
         cols = [
             "scenario_name",
+            "liquidation_trigger_mode",
             "liquidation_mode",
             "net_pnl_under_ow_regression_eval",
             "net_pnl_under_reduced_form_eval",
             "number_of_liquidation_events",
+            "number_no_liquidation_events",
+            "liquidation_event_rate_realized",
             "number_with_residual_after_first_liquidation",
             "number_with_overnight_residual",
             "hard_block_cap_violation_rate",
@@ -752,8 +895,11 @@ def main() -> None:
         print(forced_rows[[c for c in cols if c in forced_rows.columns]].to_string(index=False))
         if processed_pair_ids:
             stress_dir = out_dir / f"pair_{processed_pair_ids[0]}" / "stress"
-            print(f"Hard block events: {stress_dir / 'forced_liq_hard_block_events.csv'}")
-            print(f"Capped residual events: {stress_dir / 'forced_liq_capped_residual_events.csv'}")
+            event_files = sorted(stress_dir.glob("forced_liq_*_events.csv"))
+            if event_files:
+                print("Forced liquidation event files:")
+                for path in event_files:
+                    print(f"- {path}")
     print(strategy_df.to_string(index=False))
     print(wrong_df.to_string(index=False))
     if len(fitted_proxy_df):

@@ -108,10 +108,8 @@ def validate_figure_outputs(output_dir: Path, pair_ids: list[int], run_start_tim
 
     output_dir = Path(output_dir)
     required_global = [output_dir / "figures" / "total_net_pnl_by_pair.png"]
-    if scenario in {"wrong_model", "all"}:
-        required_global.append(output_dir / "figures" / "wrong_model_degradation_by_pair.png")
     required_pair_names = [
-        "pair_cumulative_wealth_my_ow.png",
+        "pair_cumulative_wealth_reportable_strategy.png",
         "pair_fitted_evaluator_wealth.png",
         "cumulative_wealth_internal_vs_fitted.png",
         "gross_pnl_vs_fitted_cost_cumulative.png",
@@ -129,17 +127,39 @@ def validate_figure_outputs(output_dir: Path, pair_ids: list[int], run_start_tim
         ])
     if scenario in {"forced_liquidation", "all"}:
         required_pair_names.extend([
-        "forced_liq_hard_vs_capped_wealth.png",
-        "forced_liq_event_costs_by_stock.png",
-        "forced_liq_residual_inventory_by_stock.png",
-        "forced_liq_time_to_liquidate.png",
-        "forced_liq_participation_rates.png",
-        "forced_liq_sample_path.png",
+        "forced_liq_net_pnl_by_trigger_and_mode.png",
+        "forced_liq_degradation_by_trigger_and_mode.png",
+        "forced_liq_event_counts.png",
+        "forced_liq_realized_event_rate.png",
+        "forced_liq_time_to_liquidate_by_trigger_mode.png",
+        "forced_liq_residual_inventory_by_trigger_mode.png",
+        ])
+    if scenario in {"wrong_model", "all"}:
+        required_pair_names.extend([
+        "wrong_model_net_pnl_matrix.png",
+        "wrong_model_cost_matrix.png",
+        "wrong_model_turnover_by_strategy.png",
+        "wrong_model_cumulative_wealth_matrix.png",
+        "impact_evaluator_sensitivity_same_trade_path.png",
         ])
     checks: list[dict[str, str]] = []
     paths = list(required_global)
     for pair_id in pair_ids:
-        paths.extend(output_dir / f"pair_{pair_id}" / "figures" / name for name in required_pair_names)
+        pair_dir = output_dir / f"pair_{pair_id}"
+        pair_required = list(required_pair_names)
+        if scenario in {"forced_liquidation", "all"}:
+            summary_path = pair_dir / "stress" / "forced_liquidation_summary.csv"
+            if summary_path.exists():
+                summary = pd.read_csv(summary_path)
+                for trigger_mode in summary.get("liquidation_trigger_mode", pd.Series(dtype=str)).dropna().astype(str).unique():
+                    if trigger_mode == "probabilistic_daily":
+                        row = summary.loc[summary["liquidation_trigger_mode"].astype(str).eq(trigger_mode)].iloc[0]
+                        p = float(row.get("liquidation_probability", 0.10))
+                        seed = int(row.get("liquidation_random_seed", 42))
+                        pair_required.append(f"forced_liq_hard_vs_capped_wealth_probabilistic_daily_p{int(round(p * 100)):03d}_seed{seed}.png")
+                    elif trigger_mode == "deterministic_daily":
+                        pair_required.append("forced_liq_hard_vs_capped_wealth_deterministic_daily.png")
+        paths.extend(pair_dir / "figures" / name for name in pair_required)
     for path in paths:
         exists = path.exists()
         size = path.stat().st_size if exists else 0
@@ -254,27 +274,54 @@ def validate_portfolio_plot_data(pair_dir: Path) -> list[dict[str, str]]:
 
 
 def validate_forced_liquidation_outputs(pair_dir: Path, max_cap: float | None = None) -> list[dict[str, str]]:
-    """Validate hard-block and capped-residual liquidation stress outputs."""
+    """Validate forced-liquidation trigger/mode outputs."""
 
     pair_dir = Path(pair_dir)
     stress_dir = pair_dir / "stress"
     checks: list[dict[str, str]] = []
-    for mode, label in [("hard_block", "hard_block"), ("capped_residual", "capped_residual")]:
-        trades_path = stress_dir / f"forced_liq_{mode}_trades.csv"
-        events_path = stress_dir / f"forced_liq_{mode}_events.csv"
-        eval_path = stress_dir / f"forced_liq_{mode}_fitted_evaluator.csv"
-        checks.append(_check(f"{label}_trades_file", "PASS" if trades_path.exists() else "FAIL", str(trades_path)))
-        checks.append(_check(f"{label}_events_file", "PASS" if events_path.exists() else "FAIL", str(events_path)))
-        checks.append(_check(f"{label}_fitted_evaluator_file", "PASS" if eval_path.exists() else "FAIL", str(eval_path)))
+    summary_path = stress_dir / "forced_liquidation_summary.csv"
+    if not summary_path.exists():
+        return [_check("forced_liquidation_summary_file", "FAIL", str(summary_path))]
+    summary = pd.read_csv(summary_path)
+    required_summary = {"liquidation_trigger_mode", "liquidation_probability", "liquidation_mode"}
+    checks.append(_check("summary_has_trigger_mode", "PASS" if required_summary.issubset(summary.columns) else "FAIL", f"columns={list(summary.columns)}"))
+    for _, row in summary.iterrows():
+        trigger_mode = str(row.get("liquidation_trigger_mode", "deterministic_daily"))
+        mode = str(row.get("liquidation_mode", "hard_block"))
+        mode_label = "hard_block" if mode == "hard_block" else "capped_residual"
+        probability = float(row.get("liquidation_probability", 0.10))
+        seed = int(row.get("liquidation_random_seed", 42))
+        if trigger_mode == "probabilistic_daily":
+            prefix = f"forced_liq_probabilistic_daily_p{int(round(probability * 100)):03d}_seed{seed}_{mode_label}"
+        else:
+            prefix = f"forced_liq_deterministic_daily_{mode_label}"
+        trades_path = stress_dir / f"{prefix}_trades.csv"
+        events_path = stress_dir / f"{prefix}_events.csv"
+        eval_path = stress_dir / f"{prefix}_fitted_evaluator.csv"
+        check_label = f"{trigger_mode}_{mode_label}"
+        checks.append(_check(f"{check_label}_trades_file", "PASS" if trades_path.exists() else "FAIL", str(trades_path)))
+        checks.append(_check(f"{check_label}_events_file", "PASS" if events_path.exists() else "FAIL", str(events_path)))
+        checks.append(_check(f"{check_label}_fitted_evaluator_file", "PASS" if eval_path.exists() else "FAIL", str(eval_path)))
         if not trades_path.exists():
             continue
         trades = pd.read_csv(trades_path)
         events = pd.read_csv(events_path) if events_path.exists() else pd.DataFrame()
         liq = trades.loc[trades.get("is_liquidation_trade", pd.Series(False, index=trades.index)).fillna(False).astype(bool)]
+        if trigger_mode == "deterministic_daily":
+            events_n = int(row.get("number_of_liquidation_events", len(events)))
+            stock_days = int(row.get("number_of_stock_days", 0))
+            checks.append(_check("deterministic_event_count", "PASS" if events_n == stock_days else "WARN", f"events={events_n}; stock_days={stock_days}"))
+        else:
+            rate = float(row.get("liquidation_event_rate_realized", np.nan))
+            stock_days = int(row.get("number_of_stock_days", 0))
+            p = probability
+            se = np.sqrt(p * (1 - p) / stock_days) if stock_days else np.nan
+            status = "PASS" if np.isfinite(rate) and 0 <= rate <= 1 and (not np.isfinite(se) or abs(rate - p) <= 3 * se) else "WARN"
+            checks.append(_check("probabilistic_event_count_reasonable", status, f"realized={rate:.4g}; target={p:.4g}; stock_days={stock_days}"))
         if mode == "hard_block":
-            after = trades.loc[trades.get("residual_inventory_active", pd.Series(False, index=trades.index)).fillna(False).astype(bool)]
-            max_after = float(after["position_after"].abs().max()) if len(after) else 0.0
-            checks.append(_check("hard_block_final_flat", "PASS" if max_after < 1e-8 else "FAIL", f"max_abs_position_after_liq={max_after:.3g}"))
+            starts = trades.loc[trades.get("is_forced_liquidation_start", pd.Series(False, index=trades.index)).fillna(False).astype(bool)]
+            max_after = float(starts["position_after"].abs().max()) if len(starts) else 0.0
+            checks.append(_check("hard_block_selected_flat", "PASS" if max_after < 1e-8 else "FAIL", f"max_abs_position_after_start={max_after:.3g}"))
             cap_viol = float(liq.get("violates_participation_cap", pd.Series(False, index=liq.index)).fillna(False).astype(bool).mean()) if len(liq) else 0.0
             checks.append(_check("hard_block_cap_violation_reported", "PASS", f"cap_violation_rate={cap_viol:.2%}; violation is allowed in hard-block stress"))
         else:
@@ -299,9 +346,6 @@ def validate_forced_liquidation_outputs(pair_dir: Path, max_cap: float | None = 
                 else 1.0
             )
             checks.append(_check("fitted_liquidation_cost_nonzero", "PASS" if zero_cost < 0.5 else "WARN", f"zero_cost_share={zero_cost:.2%}"))
-        event_count = len(events)
-        expected = int(trades.groupby(["stock", "date" if "date" in trades.columns else "trading_date"]).ngroups) if len(trades) else 0
-        checks.append(_check("event_count", "PASS" if event_count == expected else "WARN", f"events={event_count}; stock_days={expected}"))
     return checks
 
 
