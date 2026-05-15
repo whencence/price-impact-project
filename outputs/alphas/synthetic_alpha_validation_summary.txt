@@ -1,0 +1,24 @@
+Synthetic Alpha Validation Summary
+==================================
+Horizons are now clock-time horizons in minutes.
+The old row-based h convention is not used as the final convention.
+The previous h=5 rows was approximately 50 seconds if bins are spaced by 10 seconds.
+Baseline h: 5 minutes
+Baseline rho: 0.10
+Baseline H: 5 minutes
+Empirical correlation: 0.0996
+Correlation error: 0.0004
+Realized unbiased slope: 0.9932
+Alpha std: 2.585 bps
+Future return std: 25.789 bps
+Missing future return fraction: 1.4160%
+
+Interpretation:
+Forecast horizon h controls which future return is predicted.
+Decay half-life H controls signal persistence.
+Future return lookup uses the first available timestamp >= t+h within the same stock/date, with tolerance.
+Alpha decay uses actual timestamp gaps, not row count.
+The empirical correlation is close to the target, which validates the x/y calibration.
+The unbiased slope is close to 1, supporting the calibration condition E[r | alpha] approx alpha.
+h=5 minutes, rho=0.10 is retained as the baseline.
+The rho grid is interpreted as a signal-quality sensitivity axis, not as a parameter optimized from the market.

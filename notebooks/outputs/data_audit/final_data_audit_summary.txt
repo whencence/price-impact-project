@@ -1,0 +1,14 @@
+Final Data Audit Summary
+========================
+1. Can binSamples be used for synthetic alpha construction? No.
+2. Recommended P_t column: mid. midEnd can be used as an end-of-bin comparison or return diagnostic.
+3. Can future returns be computed without mixing days? No; computations use groupby stock/date.
+4. Enough stocks for 20-stock one-month baseline? No; candidate count = 0.
+5. Enough data for rolling-window extension? No.
+6. Can binSamples and fillSamples merge cleanly? Exact key match rate for bin rows is 0.00%; sub-second fill times may require asof/bin-aligned matching.
+7. Obvious quality issues: inspect schema/data-quality CSVs, missing effSpread fields, duplicate keys, and large price jumps in outputs/data_audit/.
+8. Candidate 20 stocks: .
+9. Reasonable synthetic alpha horizons from this audit: inspect synthetic_alpha_feasibility.csv.
+10. Is a one-row/minute signal delay feasible? No; delay is implemented by stock/date group shift.
+11. Is forced liquidation at 12:00 feasible? 0.00% of stock-days have rows before and after 12:00.
+12. Clarify with teammate/professor: exact bin interval interpretation, whether fill times should be aligned by exact time or nearest/asof bin, final impact parameter format, and whether mid or midEnd should define execution/PnL in the final simulator.

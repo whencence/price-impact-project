@@ -1,0 +1,27 @@
+Final Section 2.4 Validation Summary
+====================================
+
+Check status:
+- file/schema: PASS - All required files, columns, scenarios, and metadata found.
+- clock-time horizons: PASS - Clock-time horizon construction passed.
+- raw alpha calibration: PASS - All h/rho calibration checks passed.
+- alpha decay: PASS - warning: alpha_state_H60m std exceeds alpha_state_H1m std
+- Brownian noise: PASS - Brownian noise checks passed.
+- formula consistency: PASS - Formula reconstruction matches alpha_synthetic.
+- strategy input readiness: PASS - Saved /Users/ulysse/Desktop/Studies/Imperial/Computing for finance/Price Impact/price-impact-project/outputs/alphas/strategy_alpha_input_h5m_rho010_H5m.csv
+
+Baseline values:
+h = 5 minutes
+rho = 0.10
+H = 5 minutes
+empirical corr = 0.099555
+corr error = 0.000445
+unbiased slope = 0.993203
+future return std bps = 25.789
+alpha std bps = 2.585
+fraction missing future return = 0.014160
+corr alpha_state_H5m vs future return = 0.205328
+alpha_state_H5m std bps = 0.389
+
+Conclusion:
+Section 2.4 is ready for section 2.5.

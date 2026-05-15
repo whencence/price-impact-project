@@ -1,0 +1,8 @@
+metric,value
+alpha_mean_bps,0.001
+alpha_std_bps,0.2322
+"corr(alpha, future_return_h)",0.1904
+"corr(trade, alpha)",0.4899
+"corr(position_after, alpha)",0.5924
+share_sign_trade_matches_alpha,0.8575
+gross alpha capture,33023000.0

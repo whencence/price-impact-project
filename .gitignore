@@ -1,4 +1,16 @@
-# Python caches
+```gitignore
+# macOS / editor
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Python caches / build artifacts
 __pycache__/
 *.py[cod]
 *$py.class
@@ -7,41 +19,107 @@ __pycache__/
 .ruff_cache/
 .coverage
 htmlcov/
+build/
+dist/
+*.egg-info/
 
-# Virtual environments and local env files
+# Virtual environments / local env
+.env
+.env.*
+!.env.example
 .venv/
 venv/
 env/
 ENV/
-.env
-.env.*
-
-# Jupyter/IPython
 .ipynb_checkpoints/
-profile_default/
-ipython_config.py
 
-# Raw/project data: large course datasets should stay out of git
-data/
-
-# Generated outputs, reports, figures, and demo artifacts
-outputs/
-notebooks/outputs/
-
-# Keep source notebooks/code tracked, but ignore temporary notebook autosaves
-*.nbconvert.ipynb
-
-# OS and editor files
-.DS_Store
-Thumbs.db
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# Logs and local scratch files
+# Logs / runtime artifacts
 *.log
+logs/
+debug/
 tmp/
 temp/
-scratch/
+.cache/
 
+# Raw and processed market data
+data/
+*.parquet
+*.feather
+*.h5
+*.hdf5
+*.pkl
+*.pickle
+*.npy
+*.npz
+
+# Generated experiment outputs
+outputs/
+!outputs/
+!outputs/report_tables/
+!outputs/report_tables/*.tex
+!outputs/presentation_assets/
+!outputs/presentation_assets/latex/
+!outputs/presentation_assets/latex/*.tex
+!outputs/presentation_assets/tables/
+!outputs/presentation_assets/tables/*.tex
+!outputs/presentation_assets/tables/*.csv
+
+# Always ignore large run artifacts even under outputs
+outputs/full_runs/
+outputs/rolling_runs/
+outputs/stress/
+outputs/strategy/
+outputs/**/debug/
+outputs/**/logs/
+outputs/**/*.parquet
+outputs/**/*.pkl
+outputs/**/*.pickle
+outputs/**/*.npy
+outputs/**/*.npz
+
+# Generated figures from runs
+figures/
+outputs/**/*.png
+outputs/**/*.jpg
+outputs/**/*.jpeg
+outputs/**/*.pdf
+outputs/**/*.svg
+
+# Explicitly allow selected final presentation/report figures if committed intentionally
+!outputs/presentation_assets/figures/
+!outputs/presentation_assets/figures/*.png
+
+# CSV experiment dumps by default
+*.csv
+!outputs/report_tables/*.csv
+!outputs/presentation_assets/tables/*.csv
+
+# LaTeX build byproducts
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.lof
+*.log
+*.lot
+*.nav
+*.out
+*.run.xml
+*.snm
+*.synctex.gz
+*.toc
+*.vrb
+
+# Keep source, notebooks, docs, and LaTeX source trackable
+!src/
+!notebooks/
+!README*
+!*.md
+!*.tex
+!*.bib
+!*.sty
+!*.cls
+!*.ipynb
+```
